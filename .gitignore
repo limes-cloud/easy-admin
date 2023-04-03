@@ -7,3 +7,4 @@ demo
 .git
 .gitignore
 web/server/config.yaml
+web/.husky
