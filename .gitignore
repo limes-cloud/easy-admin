@@ -1,0 +1,9 @@
+web/node_modules
+web/.DS_Store
+web/dist-ssr
+web/*.local
+web/dist
+demo
+.git
+.gitignore
+web/server/config.yaml

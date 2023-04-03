@@ -1,0 +1,94 @@
+service:
+  name: easy-admin # 服务名称
+  addr: :8080  #服务地址
+  debug: true  #是否开启debug
+log:
+  header: trace-id # 当请求头存在trace-id时，优先使用
+  level: 0 #日志输出等级
+  output:
+    - stdout # stdout:控制台输出，k8s日志收集
+    - file # file:输出到文件
+  file: #output存在file时此配置才可生效
+    name: ./tmp/runtime/output.log #日志存放地址
+    maxSize: 1 #日志文件最大容量,单位m
+    maxBackup: 5 #日志文件最多保存个数
+    maxAge: 1 #保留就文件的最大天数,单位天
+    compress: false #是否进行压缩归档
+
+orm: #数据库相关配置
+  - enable: true #是否启用数据库
+    drive: mysql #数据库类型
+    name: system #数据库名称
+    dsn: root:root@tcp(127.0.0.1:3306)/xxx?charset=utf8mb4&parseTime=True&loc=Local #连接dsn
+    maxLifetime: 2h #最大生存时间
+    maxOpenConn: 10 #最大连接数量
+    maxIdleConn: 10 #最大空闲数量
+    level: 4 #日志等级
+    slowThreshold: 2s #慢sql阈值
+    replicas:   #从数据库，主要用来读取数据
+        - root:root@tcp(127.0.0.1:3306)/xxx?charset=utf8mb4&parseTime=True&loc=Local
+
+middleware: #中间件相关配置
+  jwt:
+    enable: true #是否开启jwt
+    header: Authorization #jwt验证header
+    secret: limeSchool #密钥
+    expire: 24h #过期时间
+    renewal: 1h #续期时间
+    unique: true #是否唯一设备登陆
+  casbin:
+    enable: true #是否开启casbin权限校验
+    db: system #选择casbin的数据库
+    whitelist:  #跳过鉴权的白名单
+      post:/api/system/user/login: true
+      post:/api/system/token/refresh: true
+      post:/api/system/captcha: true
+  pprof: #pprof分析工具
+    enable: true #是否开启pprof
+    query: secret #访问携带密钥的key url?secret=xxx
+    secret: xxx
+  rateLimit:
+    enable: true #是否开启限流
+    limit: 100 #最大访问 limit/s
+  ipLimit: #ip限流
+    enable: true #是否开启ip限流
+    limit: 20  #窗口时间内，最大访问次数
+    window: 1s #窗口时间
+  cupLoadShedding: #自适应降载
+    enable: true #是否开启自适应降载
+    threshold: 950 #cpu阈值
+    bucket: 50 #桶大小
+    window: 5s #窗口时间
+  cors:
+    enable: true
+    allowHeader: "Content-Type, Content-Length, Authorization" #允许准入的header
+    allowMethod: "POST, GET, OPTIONS, PUT, DELETE, UPDATE, PATCH" #允许准入的方法
+    allowOrigin: "*" #允许准入的域名
+    exposeHeader: "Content-Length, Access-Control-Allow-Headers"  #暴露的header
+    credentials: true
+  requestLog:
+    enable: true #是否开启请求日志
+    whitelist:  # 请求日志跳过名单
+      post:/api/system/captcha: true
+
+redis: # redis相关配置
+  host: 127.0.0.1:6379 #redis地址
+  username:  #连接账号
+  password:  #连接密码
+
+email: # 邮件发送相关配置
+  template: # 邮件模板
+    default: core/email/template/default.html
+  company: 青柠校园
+  user: 860808187@qq.com, # 发送者
+  host: smtp.qq.com:25, # 发送host
+  password: ersukmsstobebdef # 发送host密码
+
+cert: #证书相关
+  - name: decodePassword  #证书名
+    path: cert/private.pem #证书路径
+  - name: encodePassword
+    path: cert/public.pem
+
+
+
