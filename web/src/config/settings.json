@@ -1,0 +1,22 @@
+{
+  "title":"后台管理系统",
+  "desc":"开放协作，拥抱未来",
+  "theme": "light",
+  "colorWeak": false,
+  "navbar": true,
+  "menu": true,
+  "topMenu": true,
+  "hideMenu": false,
+  "menuCollapse": false,
+  "footer": true,
+  "themeColor": "#165DFF",
+  "menuWidth": 220,
+  "globalSettings": false,
+  "device": "desktop",
+  "tabBar": false,
+  "menuFromServer": true,
+  "serverMenu": [],
+  "permissions":[],
+  "isLoading":false,
+  "loadingTitle":""
+}
