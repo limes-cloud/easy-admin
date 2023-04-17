@@ -8,6 +8,7 @@ import (
 	"github.com/limeschool/easy-admin/server/core/logger"
 	"github.com/limeschool/easy-admin/server/core/orm"
 	"github.com/limeschool/easy-admin/server/core/redis"
+	"github.com/limeschool/easy-admin/server/core/upload"
 )
 
 func Init() {
@@ -25,4 +26,6 @@ func Init() {
 	casbin.Init()
 	// email 初始化
 	email.Init()
+	// 上传初四话
+	upload.Init()
 }

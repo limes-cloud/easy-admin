@@ -14,6 +14,7 @@ type AddMenuRequest struct {
 	Weight     int    `json:"weight"`
 	IsHidden   bool   `json:"is_hidden"`
 	IsCache    bool   `json:"is_cache"`
+	IsHome     bool   `json:"is_home"`
 }
 
 type UpdateMenuRequest struct {
@@ -31,6 +32,7 @@ type UpdateMenuRequest struct {
 	Weight     *int    `json:"weight"`
 	IsHidden   *bool   `json:"is_hidden"`
 	IsCache    *bool   `json:"is_cache"`
+	IsHome     *bool   `json:"is_home"`
 }
 
 type DeleteMenuRequest struct {

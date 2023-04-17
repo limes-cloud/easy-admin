@@ -9,4 +9,5 @@ type Config struct {
 	Redis      Redis      `mapstructure:"redis"`
 	Cert       []Cert     `mapstructure:"cert"`
 	Email      Email      `mapstructure:"email"`
+	Upload     Upload     `mapstructure:"upload"`
 }

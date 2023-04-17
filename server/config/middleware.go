@@ -38,13 +38,14 @@ type Middleware struct {
 	} `mapstructure:"cors"`
 
 	Jwt struct {
-		Enable  bool          `mapstructure:"enable"`
-		Redis   string        `mapstructure:"redis"`
-		Header  string        `mapstructure:"header"`
-		Secret  string        `mapstructure:"secret"`
-		Expire  time.Duration `mapstructure:"expire"`
-		Renewal time.Duration `mapstructure:"renewal"`
-		Unique  bool          `mapstructure:"unique"`
+		Enable    bool            `mapstructure:"enable"`
+		Redis     string          `mapstructure:"redis"`
+		Header    string          `mapstructure:"header"`
+		Secret    string          `mapstructure:"secret"`
+		Expire    time.Duration   `mapstructure:"expire"`
+		Renewal   time.Duration   `mapstructure:"renewal"`
+		Unique    bool            `mapstructure:"unique"`
+		Whitelist map[string]bool `mapstructure:"whitelist"`
 	} `mapstructure:"jwt"`
 
 	Casbin struct {

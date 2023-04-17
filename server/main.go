@@ -20,6 +20,9 @@ func main() {
 	// 注册中间件
 	api := middleware.Registry(engine)
 
+	// 初始化静态资源
+	engine.Static("/static", "./static")
+
 	// 路由初始化
 	systemRouter.Init(api)
 

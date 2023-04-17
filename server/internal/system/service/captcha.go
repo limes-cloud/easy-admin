@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/limeschool/easy-admin/server/core/captcha"
 	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"time"
 )
@@ -36,13 +35,15 @@ func EmailCaptcha(ctx *gin.Context) (any, error) {
 	}
 
 	// 发送邮箱验证码
-	id, err := captcha.NewEmailCaptcha(ctx, user.Email, 6, 3*time.Minute)
+	t := 3 * time.Minute
+	id, err := captcha.NewEmailCaptcha(ctx, user.Email, 6, t)
 	if err != nil {
-		return nil, errors.CaptchaSendError
+		return nil, err
 	}
 
 	return map[string]any{
-		"id": id,
+		"id":     id,
+		"expire": t.Seconds(),
 	}, nil
 
 }

@@ -42,7 +42,7 @@ func Parse(secret, token string) (any, error) {
 
 	if err != nil || !parser.Valid {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, errors.TokenExpiredError
+			return m[metaKey], errors.TokenExpiredError
 		}
 		return nil, errors.TokenValidateError
 	}
@@ -85,5 +85,5 @@ func ParseMapClaimsAndExpired(ctx *gin.Context) (any, bool, bool) {
 
 	// 获取时间差
 	unix := time.Now().Unix() - int64(claims["iat"].(float64))
-	return claims[metaKey], unix > int64(conf.Expire.Seconds()), unix > int64(conf.Expire.Seconds()+conf.Renewal.Seconds())
+	return claims[metaKey], unix >= int64(conf.Expire.Seconds()), unix >= int64(conf.Expire.Seconds()+conf.Renewal.Seconds())
 }

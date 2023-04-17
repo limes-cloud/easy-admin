@@ -44,7 +44,7 @@ func Init(engine *gin.RouterGroup) {
 		api.GET("/user", handler.CurUser)
 		api.POST("/user", handler.AddUser)
 		api.PUT("/user", handler.UpdateUser)
-		api.PUT("/user/password", handler.UpdatePassword)
+		api.PUT("/user/verify", handler.UpdateUserinfoByVerify)
 		api.PUT("/user/info", handler.UpdateUserinfo)
 		api.DELETE("/user", handler.DeleteUser)
 		api.GET("/user/menus", handler.UserMenus)
@@ -54,5 +54,14 @@ func Init(engine *gin.RouterGroup) {
 		api.POST("/user/logout", handler.UserLogout)
 		api.POST("/token/refresh", handler.RefreshToken)
 		api.GET("/login/log", handler.LoginLog)
+
+		// 系统消息
+		api.GET("/notices", handler.PageNotice)
+		api.GET("/notice", handler.GetNotice)
+		api.GET("/notice/unread_num", handler.GetUnReadNoticeNum)
+		api.POST("/notice", handler.AddNotice)
+		api.PUT("/notice", handler.UpdateNotice)
+		api.DELETE("/notice", handler.DeleteNotice)
+
 	}
 }

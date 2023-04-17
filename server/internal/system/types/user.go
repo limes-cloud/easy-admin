@@ -70,7 +70,9 @@ type Password struct {
 	Time     int64  `json:"time"`
 }
 
-type UpdatePasswordRequest struct {
+type UpdateUserinfoByVerifyRequest struct {
+	Phone     string `json:"phone" binding:"phone"`
+	Email     string `json:"email" binding:"email"`
 	Password  string `json:"password"`
 	CaptchaID string `json:"captcha_id"`
 	Captcha   string `json:"captcha"`

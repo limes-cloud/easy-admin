@@ -17,7 +17,7 @@ type Lock interface {
 	Acquire()
 	TryAcquire() bool
 	Release()
-	AcquireFunc(f func() (any, error), do func() (any, error)) (any, error)
+	AcquireFunc(f func() error, do func() error) error
 }
 
 func NewLockWithDuration(redis *redis.Client, key string, duration time.Duration) Lock {
@@ -36,12 +36,13 @@ func NewLock(redis *redis.Client, key string) Lock {
 	}
 }
 
-func (l *lock) AcquireFunc(f func() (any, error), do func() (any, error)) (any, error) {
+// AcquireFunc 分布式锁 f()从redis获取 do()从mysql获取
+func (l *lock) AcquireFunc(f func() error, do func() error) error {
 	for {
 		// 获取数据
-		data, err := f()
-		if err == nil {
-			return data, nil
+
+		if err := f(); err == nil {
+			return nil
 		}
 
 		// 数据不存在则去拿锁
@@ -50,7 +51,7 @@ func (l *lock) AcquireFunc(f func() (any, error), do func() (any, error)) (any, 
 		}
 
 		// 防止频繁自旋
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	return do()

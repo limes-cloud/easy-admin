@@ -28,7 +28,16 @@ func AddMenu(ctx *gin.Context, in *types.AddMenuRequest) error {
 		return errors.DulMenuNameError
 	}
 
-	return menu.Create(ctx)
+	if err := menu.Create(ctx); err != nil {
+		return err
+	}
+
+	// 更新菜单首页
+	if in.IsHome == true {
+		return menu.UpdateHome(ctx, menu.ID())
+	}
+
+	return nil
 }
 
 // UpdateMenu 更新菜单
@@ -92,7 +101,15 @@ func UpdateMenu(ctx *gin.Context, in *types.UpdateMenuRequest) error {
 		}
 	}
 
-	return inMenu.Update(ctx)
+	if err := inMenu.Update(ctx); err != nil {
+		return err
+	}
+
+	// 更新首页菜单
+	if inMenu.IsHome != menu.IsHome && inMenu.IsHome == true {
+		return inMenu.UpdateHome(ctx, inMenu.ID())
+	}
+	return nil
 }
 
 // DeleteMenu 删除菜单

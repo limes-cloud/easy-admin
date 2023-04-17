@@ -8,6 +8,7 @@ import (
 	"github.com/limeschool/easy-admin/server/global"
 	"github.com/limeschool/easy-admin/server/tools/lock"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 )
@@ -29,6 +30,7 @@ type Menu struct {
 	Operator   string  `json:"operator"`
 	OperatorID int64   `json:"operator_id"`
 	Children   []*Menu `json:"children,omitempty" gorm:"-"`
+	IsHome     bool    `json:"is_home" gorm:"->"`
 	orm.BaseModel
 }
 
@@ -92,38 +94,37 @@ func (u *Menu) GetBaseApiPath(ctx *gin.Context) map[string]bool {
 	lockKey := RedisBaseApiKey + "_lock"
 
 	lc := lock.NewLockWithDuration(global.Redis, lockKey, 10*time.Second)
-	data, err := lc.AcquireFunc(func() (any, error) {
-		// 从缓存中获取数据
-		m := map[string]bool{}
-		str, err := global.Redis.Get(ctx, RedisBaseApiKey).Result()
-		if err != nil {
-			return nil, err
-		}
-		return m, json.Unmarshal([]byte(str), &m)
-	}, func() (any, error) {
+	defer lc.Release()
 
-		// 从数据库中读取
-		m := map[string]bool{}
+	data := map[string]bool{}
+	err := lc.AcquireFunc(func() error {
+		if str, err := global.Redis.Get(ctx, RedisBaseApiKey).Result(); err != nil {
+			return err
+		} else {
+			return json.Unmarshal([]byte(str), &data)
+		}
+	}, func() error {
 		list, err := u.All(ctx, "permission = ? and type = 'A'", global.BaseApi)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// 转换格式
 		for _, val := range list {
-			m[strings.ToLower(val.Method+":"+val.Path)] = true
+			data[strings.ToLower(val.Method+":"+val.Path)] = true
 		}
 
 		// 将数据库中的数据存入缓存
-		b, _ := json.Marshal(m)
+		b, _ := json.Marshal(data)
 		global.Redis.Set(ctx, RedisBaseApiKey, string(b), 1*time.Hour)
-		return m, nil
+		return nil
 	})
 
 	if err != nil {
 		return nil
 	}
-	return data.(map[string]bool)
+
+	return data
 }
 
 // All 获取全部的菜单列表
@@ -158,6 +159,17 @@ func (u *Menu) Update(ctx *gin.Context) error {
 		orm.DelayDelCache(global.Redis, RedisBaseApiKey)
 	}
 	return transferErr(database(ctx).Updates(u).Error)
+}
+
+// UpdateHome 更新菜单首页
+func (u *Menu) UpdateHome(ctx *gin.Context, menuID int64) error {
+	err := database(ctx).Table(u.TableName()).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id != ?", menuID).Update("is_home", false).Error; err != nil {
+			return err
+		}
+		return tx.Where("id=?", menuID).Update("is_home", true).Error
+	})
+	return transferErr(err)
 }
 
 // DeleteByIds 通过条件删除菜单

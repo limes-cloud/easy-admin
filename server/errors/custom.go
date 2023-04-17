@@ -24,7 +24,8 @@ var (
 	CaptchaError            = &types.Response{Code: 1000015, Msg: "验证码错误"}
 	CreateCaptchaError      = &types.Response{Code: 1000015, Msg: "生成验证码失败"}
 	RefreshActiveTokenError = &types.Response{Code: 1000016, Msg: "禁止刷新可用的Token"}
-	CaptchaSendError        = &types.Response{Code: 1000017, Msg: "邮件发送失败！"}
+	CaptchaSendError        = &types.Response{Code: 1000017, Msg: "邮箱验证码发送失败！"}
+	DulSendCaptchaError     = &types.Response{Code: 1000015, Msg: "不能重复发送验证码，请稍后重试"}
 
 	//auth相关
 	NotResourcePowerError = &types.Response{Code: 4003, Msg: "暂无接口资源权限"}
@@ -57,7 +58,7 @@ var (
 	InitUploadError           = &types.Response{Code: 1000060, Msg: "文件上传初始化失败"}
 	FileLimitMaxSizeError     = &types.Response{Code: 1000061, Msg: "文件超过规定大小限制"}
 	OpenFileError             = &types.Response{Code: 1000062, Msg: "上传文件打开失败"}
-	UploadTypeNotSupportError = &types.Response{Code: 1000063, Msg: "上传文件打开失败"}
+	UploadTypeNotSupportError = &types.Response{Code: 1000063, Msg: "不支持上传此类型文件"}
 	UploadTypeError           = &types.Response{Code: 1000063, Msg: "存在不允许上传的文件类型"}
 
 	// registry

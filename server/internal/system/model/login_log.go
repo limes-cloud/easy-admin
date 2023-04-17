@@ -42,7 +42,7 @@ func (u *LoginLog) Page(ctx *gin.Context, options orm.PageOptions) ([]LoginLog, 
 		return nil, 0, err
 	}
 
-	db = db.Order("created_at").Offset((options.Page - 1) * options.PageSize).Limit(options.PageSize)
+	db = db.Order("created_at desc").Offset((options.Page - 1) * options.PageSize).Limit(options.PageSize)
 
 	return list, total, db.Find(&list).Error
 }

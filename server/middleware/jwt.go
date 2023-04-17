@@ -7,6 +7,7 @@ import (
 	"github.com/limeschool/easy-admin/server/core/response"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/global"
+	"strings"
 )
 
 func JwtAuth() gin.HandlerFunc {
@@ -19,9 +20,9 @@ func JwtAuth() gin.HandlerFunc {
 		}
 
 		// 解析token
-		claims, err := jwt.Parse(conf.Secret, token)
-		if err != nil {
-			response.Error(ctx, err)
+		claims, parseErr := jwt.Parse(conf.Secret, token)
+		if claims == nil && parseErr != nil {
+			response.Error(ctx, parseErr)
 			ctx.Abort()
 			return
 		}
@@ -34,6 +35,21 @@ func JwtAuth() gin.HandlerFunc {
 			return
 		}
 
+		// 设置到上下文
+		md.SetToContext(ctx)
+
+		// 检查是否过期，白名单内跳过
+		url := strings.ToLower(ctx.Request.Method + ":" + ctx.FullPath())
+		if errors.Is(parseErr, errors.TokenExpiredError) {
+			if conf.Whitelist[url] {
+				return
+			} else {
+				response.Error(ctx, parseErr)
+				ctx.Abort()
+				return
+			}
+		}
+
 		// 是否开启唯一设备登陆
 		if conf.Unique {
 			if !jwt.Compare(ctx, md.UserID, token) {
@@ -43,7 +59,5 @@ func JwtAuth() gin.HandlerFunc {
 			}
 		}
 
-		// 设置到上下文
-		md.SetToContext(ctx)
 	}
 }

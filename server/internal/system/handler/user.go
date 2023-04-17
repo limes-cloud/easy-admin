@@ -76,15 +76,15 @@ func UpdateUserinfo(ctx *gin.Context) {
 	}
 }
 
-func UpdatePassword(ctx *gin.Context) {
+func UpdateUserinfoByVerify(ctx *gin.Context) {
 	// 检验参数
-	in := types.UpdatePasswordRequest{}
+	in := types.UpdateUserinfoByVerifyRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
 		response.Error(ctx, errors.ParamsError)
 		return
 	}
 	// 调用实现
-	if err := service.UpdatePassword(ctx, &in); err != nil {
+	if err := service.UpdateUserinfoByVerify(ctx, &in); err != nil {
 		response.Error(ctx, err)
 	} else {
 		response.Success(ctx)

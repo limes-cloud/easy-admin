@@ -175,8 +175,8 @@ func DeleteUser(ctx *gin.Context, in *types.DeleteUserRequest) error {
 	return user.DeleteByID(ctx, in.ID)
 }
 
-// UpdatePassword 更新用户密码
-func UpdatePassword(ctx *gin.Context, in *types.UpdatePasswordRequest) error {
+// UpdateUserinfoByVerify 更新用户重要数据
+func UpdateUserinfoByVerify(ctx *gin.Context, in *types.UpdateUserinfoByVerifyRequest) error {
 	md, err := metadata.GetFormContext(ctx)
 	if err != nil {
 		return err
@@ -190,6 +190,8 @@ func UpdatePassword(ctx *gin.Context, in *types.UpdatePasswordRequest) error {
 	user := model.User{}
 	user.ID = md.UserID
 	user.Password = in.Password
+	user.Phone = in.Phone
+	user.Email = in.Email
 	return user.Update(ctx)
 }
 
@@ -286,8 +288,6 @@ func UserLogin(ctx *gin.Context, in *types.UserLoginRequest) (resp *types.UserLo
 		return nil, err
 	}
 
-	// 将用户的token信息写入redis
-
 	// 修改登陆时间
 	return resp, user.UpdateLastLogin(ctx, time.Now().Unix())
 }
@@ -304,7 +304,7 @@ func RefreshToken(ctx *gin.Context) (*types.UserLoginResponse, error) {
 	}
 
 	if maxExpired {
-		return nil, errors.TokenExpiredError
+		return nil, errors.RefTokenExpiredError
 	}
 
 	md, err := metadata.Parse(claims)

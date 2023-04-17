@@ -90,5 +90,12 @@ cert: #证书相关
   - name: encodePassword
     path: cert/public.pem
 
+upload:
+    drive_type: local
+    local_dir: static
+    accept_types: ["jpg","png","jpeg"]
+    max_size: 500
+    rename: true
+
 
 
