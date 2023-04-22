@@ -1,146 +1,91 @@
 package captcha
 
 import (
-	"context"
 	"crypto/md5"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"github.com/limeschool/easy-admin/server/core/email"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
-	"github.com/limeschool/easy-admin/server/tools"
-	captcha "github.com/mojocn/base64Captcha"
+	"github.com/limeschool/easy-admin/server/config"
+	e "github.com/limeschool/easy-admin/server/core/email"
+	"github.com/limeschool/easy-admin/server/core/redis"
+
+	"math"
+	"math/rand"
+	"strconv"
 	"time"
 )
 
-type custom struct {
-	redis    *redis.Client
-	duration time.Duration
+type res struct {
+	ID     string `json:"id"`
+	Base64 string `json:"base64,omitempty"`
+	Expire int    `json:"expire"`
 }
 
-func (s *custom) Set(id string, value string) error {
-	return s.redis.Set(context.Background(), id, value, s.duration).Err()
-}
-func (s *custom) Get(id string, clear bool) string {
-	res, _ := s.redis.Get(context.Background(), id).Result()
-	if clear {
-		s.Clear(id)
-	}
-	return res
+type captcha struct {
+	rs    redis.Redis
+	email e.Email
+	m     map[string]config.Captcha
 }
 
-func (s *custom) Clear(id string) {
-	s.redis.Del(context.Background(), id)
+type Captcha interface {
+	Image(ctx *gin.Context, name string) Image
+	Email(ctx *gin.Context, name string) Email
 }
 
-func (s *custom) Verify(id string, answer string, clear bool) bool {
-	res, err := s.redis.Get(context.Background(), id).Result()
-	if err != nil {
-		return false
+func New(cs []config.Captcha, rs redis.Redis, email e.Email) Captcha {
+	cpIns := captcha{
+		rs:    rs,
+		email: email,
+		m:     make(map[string]config.Captcha),
 	}
-	if clear {
-		s.Clear(id)
+	for _, item := range cs {
+		cpIns.m[item.Name+":"+item.Type] = item
 	}
-	return res == answer
+	return &cpIns
 }
 
-func getStoreImageId(ctx *gin.Context, id string) string {
-	id += tools.ClientIP(ctx)
-	return "image_" + tools.Md5(id)
+// isTemplate 判断是否存在指定的模板
+func (c *captcha) isTemplate(name, tp string) bool {
+	_, is := c.m[name+":"+tp]
+	return is
 }
 
-func getStoreEmailId(ctx *gin.Context, id string) string {
-	id += tools.ClientIP(ctx)
-	return "email_" + tools.Md5(id)
+// getTemplate 获取指定模板
+func (c *captcha) getTemplate(name, tp string) config.Captcha {
+	return c.m[name+":"+tp]
 }
 
-// VerifyImage 验证图像
-func VerifyImage(ctx *gin.Context, id, answer string) bool {
-	store := &custom{
-		redis: global.Redis,
+// clientUUID 获取用户对应验证场景的唯一id
+func (c *captcha) clientUUID(ctx *gin.Context, name, tp string) string {
+	ip := ctx.ClientIP()
+	if ip == "::1" {
+		ip = ctx.GetHeader("X-Real-IP")
 	}
-
-	sid := getStoreImageId(ctx, id)
-
-	if store.Verify(sid, answer, false) {
-		store.Clear(sid)
-		return true
-	}
-	return false
+	return fmt.Sprintf("captcha:%s:%s:%x", name, tp, md5.Sum([]byte(ip)))
 }
 
-// VerifyEmail 验证邮箱
-func VerifyEmail(ctx *gin.Context, id, answer string) bool {
-	store := &custom{
-		redis: global.Redis,
-	}
-
-	sid := getStoreEmailId(ctx, id)
-
-	if store.Verify(sid, answer, false) {
-		store.Clear(sid)
-		return true
-	}
-	return false
+// randomCode 生成随机数验证码
+func (c *captcha) randomCode(len int) string {
+	rand.Seed(time.Now().Unix())
+	var code = rand.Intn(int(math.Pow10(len)) - int(math.Pow10(len-1)))
+	return strconv.Itoa(code + int(math.Pow10(len-1)))
 }
 
-// NewImageCaptcha 根据用户ip创建图形验证码
-func NewImageCaptcha(ctx *gin.Context, length int, duration time.Duration) (string, string, error) {
-	id := uuid.New().String()
-	answer := tools.RandomCode(length)
-	store := &custom{
-		redis:    global.Redis,
-		duration: duration,
+// Image  实例化图形验证码
+func (c *captcha) Image(ctx *gin.Context, name string) Image {
+	return &image{
+		name:    name,
+		tp:      "image",
+		captcha: c,
+		ctx:     ctx,
 	}
-
-	// 生成二维码
-	dt := captcha.NewDriverDigit(80, 240, 4, 0.7, 80)
-	cpt := captcha.NewCaptcha(dt, store)
-	item, err := cpt.Driver.DrawCaptcha(answer)
-	if err != nil {
-		return "", "", errors.CreateCaptchaError
-	}
-
-	return id, item.EncodeB64string(), store.Set(getStoreImageId(ctx, id), answer)
 }
 
-func getUserUid(userId int64) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("email_user_%v", userId))))
-}
-
-// NewEmailCaptcha 根据用户邮箱创建验证码
-func NewEmailCaptcha(ctx *gin.Context, em string, length int, duration time.Duration) (string, error) {
-	// 邮箱验证码需要限制次数
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return "", err
+// Email  实例化邮箱验证码
+func (c *captcha) Email(ctx *gin.Context, name string) Email {
+	return &email{
+		name:    name,
+		tp:      "email",
+		captcha: c,
+		ctx:     ctx,
 	}
-
-	store := &custom{
-		redis:    global.Redis,
-		duration: duration,
-	}
-
-	// 验证是否存在没有过期的验证码
-	uid := getUserUid(md.UserID)
-	if id := store.Get(uid, false); id != "" {
-		return "", errors.DulSendCaptchaError
-	}
-
-	id := uuid.New().String()
-	answer := tools.RandomCode(length)
-
-	// 发送验证码
-	str := "您的邮箱验证码为：%s，该验证码%d分钟内有效，为了保证您的账户安全，请勿向他人泄露验证码吗信息"
-	content := fmt.Sprintf(str, answer, int(duration/time.Minute))
-	if email.New().Send(em, "验证码发送通知", content) != nil {
-		return "", errors.CaptchaSendError
-	}
-
-	// 进行加锁以及存储
-	_ = store.Set(uid, "1")
-	return id, store.Set(getStoreEmailId(ctx, id), answer)
 }

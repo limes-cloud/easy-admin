@@ -3,15 +3,16 @@ package middleware
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/core"
 )
 
 // Cors 跨域相关的
 func Cors() gin.HandlerFunc {
-	//corsConfig := cors.DefaultConfig()
-	conf := global.Config.Middleware.Cors
-
 	return func(c *gin.Context) {
+		ctx := core.New(c)
+		defer ctx.Release()
+
+		conf := ctx.Config().Middleware.Cors
 		// 允许 Origin 字段中的域发送请求
 		if conf.AllowOrigin == "*" {
 			c.Writer.Header().Add("Access-Control-Allow-Origin", c.Request.Header.Get("origin"))
@@ -35,21 +36,4 @@ func Cors() gin.HandlerFunc {
 			c.Next()
 		}
 	}
-
-	//if conf.AllowOrigin == "*" {
-	//	corsConfig.AllowAllOrigins = true
-	//} else {
-	//	corsConfig.AllowOrigins = strings.Split(conf.AllowOrigin, ",")
-	//}
-	//
-	//if conf.AllowHeader != "*" {
-	//	corsConfig.AllowHeaders = strings.Split(conf.AllowHeader, ",")
-	//}
-	//
-	//if conf.AllowMethod != "*" {
-	//	corsConfig.AllowMethods = strings.Split(conf.AllowMethod, ",")
-	//}
-	//corsConfig.AllowCredentials = conf.Credentials
-	//
-	//return cors.New(corsConfig)
 }

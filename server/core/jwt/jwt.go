@@ -1,89 +1,149 @@
 package jwt
 
 import (
+	"context"
+	"crypto/md5"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
-	"github.com/limeschool/easy-admin/server/tools"
+	"github.com/go-redis/redis/v8"
+	jv4 "github.com/golang-jwt/jwt/v4"
+	"github.com/limeschool/easy-admin/server/config"
+	rd "github.com/limeschool/easy-admin/server/core/redis"
+	"github.com/limeschool/easy-admin/server/types"
+	"strings"
 	"time"
 )
 
-const (
-	prefix  = "token_"
-	metaKey = "data"
-)
+type jwt struct {
+	redis *redis.Client
+	conf  config.JWT
+	ctx   *gin.Context
+}
 
-func Compare(ctx *gin.Context, userId int64, token string) bool {
-	key := prefix + tools.Md5(userId)
-	st, err := global.Redis.Get(ctx, key).Result()
+type JWT interface {
+	Compare(userId int64) bool
+	IsExist(userId int64) bool
+	Store(userId int64, token string, duration time.Duration) error
+	Clear(userId int64) error
+	Parse() (*types.Metadata, *jwtErr)
+	Create(userId int64, data *types.Metadata) (string, error)
+	IsWhitelist(method, path string) bool
+	CheckUnique(userID int64) bool
+}
+
+func New(conf config.JWT, rd rd.Redis, ctx *gin.Context) JWT {
+	return &jwt{
+		redis: rd.GetRedis(conf.Cache),
+		ctx:   ctx,
+		conf:  conf,
+	}
+}
+
+func (j jwt) newJwtErr(err string, opts ...jwtErrOption) *jwtErr {
+	je := &jwtErr{
+		err: errors.New(err),
+	}
+	for _, opt := range opts {
+		opt(je)
+	}
+	return je
+}
+
+// uuid 获取存储的唯一ID
+func (j jwt) uuid(userId int64) string {
+	return fmt.Sprintf("token_%x", j.encode(userId))
+}
+
+// uuid 对存储数据进行加密编码
+func (j jwt) encode(data any) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprint(data))))
+}
+
+// Compare 对比token是否和缓存中的一致
+func (j jwt) Compare(userId int64) bool {
+	token := j.ctx.GetHeader(j.conf.Header)
+	st, err := j.redis.Get(context.Background(), j.uuid(userId)).Result()
 	if err != nil {
 		return false
 	}
-	return st == tools.Md5(token)
+	return st == j.encode(token)
 }
 
-func Store(ctx *gin.Context, userId int64, token string, duration time.Duration) error {
-	key := prefix + tools.Md5(userId)
-	return global.Redis.Set(ctx, key, tools.Md5(token), duration).Err()
+// IsExist 判断缓存中是否存在用户的token
+func (j jwt) IsExist(userId int64) bool {
+	st, _ := j.redis.Exists(context.Background(), j.uuid(userId)).Result()
+	return st != 0
 }
 
-func Clear(ctx *gin.Context, userId int64) error {
-	key := prefix + tools.Md5(userId)
-	return global.Redis.Del(ctx, key).Err()
+// Store 存储用户token信息到缓存数据
+func (j jwt) Store(userId int64, token string, duration time.Duration) error {
+	return j.redis.Set(context.Background(), j.uuid(userId), j.encode(token), duration).Err()
 }
 
-func Parse(secret, token string) (any, error) {
-	var m jwt.MapClaims
-	parser, err := jwt.ParseWithClaims(token, &m, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
+// Clear 清除用户缓存数据
+func (j jwt) Clear(userId int64) error {
+	return j.redis.Del(context.Background(), j.uuid(userId)).Err()
+}
+
+// Parse 解析用户token信息
+func (j jwt) Parse() (*types.Metadata, *jwtErr) {
+	token := j.ctx.GetHeader(j.conf.Header)
+	var m jv4.MapClaims = make(map[string]any)
+	parser, err := jv4.ParseWithClaims(token, &m, func(token *jv4.Token) (interface{}, error) {
+		return []byte(j.conf.Secret), nil
 	})
 
-	if err != nil || !parser.Valid {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return m[metaKey], errors.TokenExpiredError
-		}
-		return nil, errors.TokenValidateError
+	// 判断是否是验证失败
+	if err != nil && parser == nil {
+		return nil, j.newJwtErr("token verify error")
 	}
 
-	return m[metaKey], nil
+	exp := int64(0)
+	if m["exp"] != nil {
+		exp = int64(m["exp"].(float64))
+	}
+
+	data := types.Metadata{}
+	b, _ := json.Marshal(m["data"])
+	_ = json.Unmarshal(b, &data)
+
+	if err != nil {
+		return &data, j.newJwtErr(err.Error(),
+			withVerify(parser.Valid),
+			withExpired(errors.Is(err, jv4.ErrTokenExpired)),
+			withExpireUnix(exp),
+			withRenewalUnix(int64(j.conf.Renewal.Seconds())),
+		)
+	}
+
+	// 成功返回
+	return &data, nil
 }
 
-func Create(ctx *gin.Context, md *metadata.Value) (string, error) {
-	// 生成token携带信息
-	conf := global.Config.Middleware.Jwt
-
-	claims := make(jwt.MapClaims)
-	claims["exp"] = time.Now().Unix() + int64(conf.Expire.Seconds())
+// Create 生成token并保存到缓存
+func (j jwt) Create(userId int64, data *types.Metadata) (string, error) {
+	claims := make(jv4.MapClaims)
+	claims["exp"] = time.Now().Unix() + int64(j.conf.Expire.Seconds())
 	claims["iat"] = time.Now().Unix()
-	claims[metaKey] = md
-	tokenJwt := jwt.New(jwt.SigningMethodHS256)
+	claims["data"] = data
+	tokenJwt := jv4.New(jv4.SigningMethodHS256)
 	tokenJwt.Claims = claims
-	token, err := tokenJwt.SignedString([]byte(conf.Secret))
+	token, err := tokenJwt.SignedString([]byte(j.conf.Secret))
 	if err != nil {
 		return "", err
 	}
-
-	return token, Store(ctx, md.UserID, token, conf.Expire)
+	return token, j.Store(userId, token, j.conf.Expire)
 }
 
-func ParseMapClaimsAndExpired(ctx *gin.Context) (any, bool, bool) {
-	var claims jwt.MapClaims
-	conf := global.Config.Middleware.Jwt
+func (j jwt) IsWhitelist(method, path string) bool {
+	return j.conf.Whitelist[strings.ToLower(method+":"+path)]
+}
 
-	// 解密
-	token := ctx.Request.Header.Get(conf.Header)
-	_, _ = jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(conf.Secret), nil
-	})
-
-	// 解密失败
-	if claims == nil {
-		return nil, true, true
+func (j jwt) CheckUnique(userID int64) bool {
+	if !j.conf.Unique {
+		return true
 	}
-
-	// 获取时间差
-	unix := time.Now().Unix() - int64(claims["iat"].(float64))
-	return claims[metaKey], unix >= int64(conf.Expire.Seconds()), unix >= int64(conf.Expire.Seconds()+conf.Renewal.Seconds())
+	return j.Compare(userID)
 }

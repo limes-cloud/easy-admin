@@ -1,18 +1,16 @@
 package service
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
-	"github.com/limeschool/easy-admin/server/tools"
 	"github.com/limeschool/easy-admin/server/tools/address"
 	"github.com/limeschool/easy-admin/server/tools/ua"
 	tps "github.com/limeschool/easy-admin/server/types"
 )
 
-func AddLoginLog(ctx *gin.Context, phone string, err error) error {
-	ip := tools.ClientIP(ctx)
+func AddLoginLog(ctx *core.Context, phone string, err error) error {
+	ip := ctx.ClientIP()
 	userAgent := ctx.Request.Header.Get("User-Agent")
 	info := ua.Parse(userAgent)
 	desc := ""
@@ -27,7 +25,7 @@ func AddLoginLog(ctx *gin.Context, phone string, err error) error {
 	log := model.LoginLog{
 		Phone:       phone,
 		IP:          ip,
-		Address:     address.GetAddress(ip),
+		Address:     address.New(ip).GetAddress(),
 		Browser:     info.Name,
 		Status:      err == nil,
 		Description: desc,
@@ -37,9 +35,9 @@ func AddLoginLog(ctx *gin.Context, phone string, err error) error {
 	return log.Create(ctx)
 }
 
-func PageLoginLog(ctx *gin.Context, in *types.LoginLogRequest) ([]model.LoginLog, int64, error) {
+func PageLoginLog(ctx *core.Context, in *types.LoginLogRequest) ([]model.LoginLog, int64, error) {
 	log := model.LoginLog{}
-	return log.Page(ctx, orm.PageOptions{
+	return log.Page(ctx, tps.PageOptions{
 		Page:     in.Page,
 		PageSize: in.PageSize,
 		Model:    in,

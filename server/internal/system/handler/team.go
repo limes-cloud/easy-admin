@@ -2,55 +2,67 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func AllTeam(ctx *gin.Context) {
+func AllTeam(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if resp, err := service.AllTeam(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func AddTeam(ctx *gin.Context) {
+func AddTeam(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.AddTeamRequest{}
 	if err := ctx.ShouldBindJSON(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.AddTeam(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateTeam(ctx *gin.Context) {
+func UpdateTeam(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UpdateTeamRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.UpdateTeam(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func DeleteTeam(ctx *gin.Context) {
+func DeleteTeam(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.DeleteTeamRequest{}
 	if ctx.ShouldBind(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.DeleteTeam(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }

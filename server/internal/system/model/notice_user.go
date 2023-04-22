@@ -1,8 +1,6 @@
 package model
 
-import (
-	"github.com/gin-gonic/gin"
-)
+import "github.com/limeschool/easy-admin/server/core"
 
 type NoticeUser struct {
 	NoticeID int64 `json:"notice_id"`
@@ -15,6 +13,6 @@ func (u NoticeUser) TableName() string {
 }
 
 // Create 创建阅读信息
-func (u *NoticeUser) Create(ctx *gin.Context) error {
+func (u *NoticeUser) Create(ctx *core.Context) error {
 	return transferErr(database(ctx).Create(u).Error)
 }

@@ -2,23 +2,25 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func UploadFile(ctx *gin.Context) {
-	// 检验参数
+func UploadFile(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UploadRequest{}
 	if ctx.ShouldBind(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
 	if data, err := service.UploadFile(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, data)
+		ctx.RespData(data)
 	}
 }

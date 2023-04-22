@@ -1,16 +1,16 @@
 package service
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/limeschool/easy-admin/server/consts"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 	"github.com/limeschool/easy-admin/server/tools/tree"
 )
 
 // UpdateRoleMenu 修改角色所属菜单
-func UpdateRoleMenu(ctx *gin.Context, in *types.AddRoleMenuRequest) error {
+func UpdateRoleMenu(ctx *core.Context, in *types.AddRoleMenuRequest) error {
 	// 超级管理员不存在菜单权限，自动获取全部菜单，所以禁止修改
 	if in.RoleID == 1 {
 		return errors.SuperAdminEditError
@@ -29,7 +29,7 @@ func UpdateRoleMenu(ctx *gin.Context, in *types.AddRoleMenuRequest) error {
 	}
 
 	// 删除当前用户的全部rbac权限
-	_, _ = global.Casbin.RemoveFilteredPolicy(0, role.Keyword)
+	_, _ = ctx.Enforcer().Instance().RemoveFilteredPolicy(0, role.Keyword)
 
 	// 获取当前修改菜单的信息
 	menu := model.Menu{}
@@ -40,13 +40,13 @@ func UpdateRoleMenu(ctx *gin.Context, in *types.AddRoleMenuRequest) error {
 	}
 
 	// 将新的策略的策略写入rbac
-	_, _ = global.Casbin.AddPolicies(policies)
+	_, _ = ctx.Enforcer().Instance().AddPolicies(policies)
 
 	return nil
 }
 
 // RoleMenuIds 获取角色菜单的所有id
-func RoleMenuIds(ctx *gin.Context, in *types.RoleMenuIdsRequest) ([]int64, error) {
+func RoleMenuIds(ctx *core.Context, in *types.RoleMenuIdsRequest) ([]int64, error) {
 
 	// 获取当前角色的所有菜单
 	rm := model.RoleMenu{}
@@ -64,7 +64,7 @@ func RoleMenuIds(ctx *gin.Context, in *types.RoleMenuIdsRequest) ([]int64, error
 	return ids, nil
 }
 
-func RoleMenu(ctx *gin.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
+func RoleMenu(ctx *core.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
 	// 查询角色信息
 	role := model.Role{}
 	if err := role.OneByID(ctx, in.RoleID); err != nil {
@@ -75,8 +75,8 @@ func RoleMenu(ctx *gin.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
 
 	var menu model.Menu
 
-	if role.Keyword == global.JwtSuperAdmin {
-		menus, _ = menu.All(ctx, "permission!=?", global.BaseApi)
+	if role.Keyword == consts.JwtSuperAdmin {
+		menus, _ = menu.All(ctx, "permission!=?", consts.BaseApi)
 	} else {
 		// 查询角色所属菜单
 		rm := model.RoleMenu{}
@@ -95,7 +95,7 @@ func RoleMenu(ctx *gin.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
 		}
 
 		// 获取指定id的所有菜单
-		menus, _ = menu.All(ctx, "id in ? and permission!=?", ids, global.BaseApi)
+		menus, _ = menu.All(ctx, "id in ? and permission!=?", ids, consts.BaseApi)
 	}
 
 	var listTree []tree.Tree

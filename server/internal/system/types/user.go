@@ -55,10 +55,11 @@ type DeleteUserRequest struct {
 }
 
 type UserLoginRequest struct {
-	Phone     string `json:"phone"  binding:"required"`
-	Password  string `json:"password"  binding:"required"`
-	CaptchaID string `json:"captcha_id"`
-	Captcha   string `json:"captcha"`
+	Phone       string `json:"phone"  binding:"required"`
+	Password    string `json:"password"  binding:"required"`
+	CaptchaName string `json:"-"`
+	CaptchaID   string `json:"captcha_id" binding:"required"`
+	Captcha     string `json:"captcha" binding:"required"`
 }
 
 type UserLoginResponse struct {
@@ -71,9 +72,10 @@ type Password struct {
 }
 
 type UpdateUserinfoByVerifyRequest struct {
-	Phone     string `json:"phone" binding:"phone"`
-	Email     string `json:"email" binding:"email"`
-	Password  string `json:"password"`
-	CaptchaID string `json:"captcha_id"`
-	Captcha   string `json:"captcha"`
+	Phone       string `json:"phone" binding:"phone"`
+	Email       string `json:"email" binding:"email"`
+	Password    string `json:"password"`
+	CaptchaName string `json:"-"`
+	CaptchaID   string `json:"captcha_id"`
+	Captcha     string `json:"captcha"`
 }

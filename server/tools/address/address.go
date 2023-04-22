@@ -5,28 +5,48 @@ import (
 	"encoding/json"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 )
 
-func GetAddress(ip string) string {
-	if ip == "127.0.0.1" || ip == "::1" {
+type address struct {
+	ip string
+}
+
+type Address interface {
+	GetAddress() string
+}
+
+func New(ip string) Address {
+	return &address{
+		ip: ip,
+	}
+}
+
+func (a address) GetAddress() string {
+	if a.ip == "127.0.0.1" || a.ip == "::1" {
 		return "本地登陆"
 	}
-	if CheckIP(ip) {
-		return GetAddressByIP(ip)
+	if a.check() {
+		// ip转地址
+		if res := IPWhois(a.ip); res != "" {
+			return res
+		}
+		return "地址查询失败"
 	}
 	return "非法ip地址"
 }
 
-func GetAddressByIP(ip string) (address string) {
-	if address = IPWhois(ip); address != "" {
-		return
+func (a address) check() bool {
+	addr := strings.Trim(a.ip, " ")
+	regStr := `^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.)(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){2}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
+	if match, _ := regexp.MatchString(regStr, addr); match {
+		return true
 	}
-	return "地址查询失败"
+	return false
 }
 
 func IPWhois(ip string) string {
@@ -35,7 +55,7 @@ func IPWhois(ip string) string {
 	}
 	var resp response
 	url := "https://whois.pconline.com.cn/ipJson.jsp?json=true&ip=" + ip
-	Get(url, &resp, true)
+	_ = Get(url, &resp, true)
 	return resp.Addr
 }
 
@@ -48,7 +68,7 @@ func Get(url string, dst interface{}, toUtf8 bool) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if toUtf8 {
 		body, _ = GbkToUtf8(body)
 	}
@@ -58,18 +78,9 @@ func Get(url string, dst interface{}, toUtf8 bool) error {
 	return json.Unmarshal(body, dst)
 }
 
-func CheckIP(ip string) bool {
-	addr := strings.Trim(ip, " ")
-	regStr := `^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.)(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){2}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
-	if match, _ := regexp.MatchString(regStr, addr); match {
-		return true
-	}
-	return false
-}
-
 func GbkToUtf8(s []byte) ([]byte, error) {
 	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
-	d, e := ioutil.ReadAll(reader)
+	d, e := io.ReadAll(reader)
 	if e != nil {
 		return nil, e
 	}

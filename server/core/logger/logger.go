@@ -1,16 +1,24 @@
 package logger
 
 import (
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 )
 
-func Init() {
-	conf := global.Config.Log
+type logger struct {
+	*zap.Logger
+	c config.Log
+}
 
+type Logger interface {
+	WithID(id string) *zap.Logger
+	Field() string
+}
+
+func New(conf config.Log, srvName string) Logger {
 	// 编码器配置
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "time",
@@ -50,8 +58,29 @@ func Init() {
 	)
 
 	// 创建zap
-	global.Logger = zap.New(core,
-		zap.AddCaller(),
-		zap.Fields(zap.String("service", global.Config.Service.Name)),
-	)
+	return &logger{
+		c: conf,
+		Logger: zap.New(core,
+			zap.AddCaller(),
+			zap.Fields(zap.String("service", srvName)),
+		)}
+}
+
+// Field
+//
+//	@Description: 获取链路日志字段名
+//	@receiver l
+//	@return string
+func (l *logger) Field() string {
+	return l.c.Field
+}
+
+// WithID
+//
+//	@Description: 设置链路日志id
+//	@receiver l
+//	@param id
+//	@return *zap.Logger
+func (l *logger) WithID(id string) *zap.Logger {
+	return l.Logger.With(zap.Any(l.c.Field, id))
 }

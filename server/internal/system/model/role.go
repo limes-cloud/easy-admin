@@ -1,14 +1,14 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	"github.com/limeschool/easy-admin/server/types"
 )
 
 type Role struct {
-	orm.BaseModel
+	types.BaseModel
 	ParentID    int64   `json:"parent_id"`
 	Name        string  `json:"name" `
 	Keyword     string  `json:"keyword"`
@@ -48,11 +48,12 @@ func (r *Role) TableName() string {
 }
 
 // Create 创建角色信息
-func (r *Role) Create(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (r *Role) Create(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	r.Operator = md.Username
 	r.OperatorID = md.UserID
 
@@ -60,18 +61,18 @@ func (r *Role) Create(ctx *gin.Context) error {
 }
 
 // OneByID 通过ID查询角色信息
-func (r *Role) OneByID(ctx *gin.Context, id int64) error {
+func (r *Role) OneByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).First(r, "id = ?", id).Error)
 }
 
 // All 查询全部角色信息
-func (r *Role) All(ctx *gin.Context, cond ...any) ([]*Role, error) {
+func (r *Role) All(ctx *core.Context, cond ...any) ([]*Role, error) {
 	var list []*Role
 	return list, transferErr(database(ctx).Order("weight desc").Find(&list, cond...).Error)
 }
 
 // RoleStatus 获取角色状态
-func (r *Role) RoleStatus(ctx *gin.Context, roleId int64) bool {
+func (r *Role) RoleStatus(ctx *core.Context, roleId int64) bool {
 	team, err := r.Tree(ctx, 1)
 	if err != nil {
 		return false
@@ -95,7 +96,7 @@ func dfsRoleStatus(role *Role, roleId int64, status bool, res *bool) bool {
 }
 
 // Tree 查询指定角色为根节点的角色树
-func (r *Role) Tree(ctx *gin.Context, roleId int64) (tree.Tree, error) {
+func (r *Role) Tree(ctx *core.Context, roleId int64) (tree.Tree, error) {
 	list, err := r.All(ctx)
 	if err != nil {
 		return nil, err
@@ -108,11 +109,12 @@ func (r *Role) Tree(ctx *gin.Context, roleId int64) (tree.Tree, error) {
 }
 
 // Update 更新角色信息
-func (r *Role) Update(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (r *Role) Update(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	r.Operator = md.Username
 	r.OperatorID = md.UserID
 
@@ -120,6 +122,6 @@ func (r *Role) Update(ctx *gin.Context) error {
 }
 
 // DeleteByID 通过ID删除角色信息
-func (r *Role) DeleteByID(ctx *gin.Context, id int64) error {
+func (r *Role) DeleteByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).Where("id = ?", id).Delete(&r).Error)
 }

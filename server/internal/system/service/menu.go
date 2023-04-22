@@ -1,23 +1,22 @@
 package service
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 	"github.com/limeschool/easy-admin/server/tools/tree"
 )
 
 // AllMenu 获取菜单树
-func AllMenu(ctx *gin.Context) (tree.Tree, error) {
+func AllMenu(ctx *core.Context) (tree.Tree, error) {
 	menu := model.Menu{}
 	return menu.Tree(ctx)
 }
 
 // AddMenu 新增菜单
-func AddMenu(ctx *gin.Context, in *types.AddMenuRequest) error {
+func AddMenu(ctx *core.Context, in *types.AddMenuRequest) error {
 	menu := model.Menu{}
 	if copier.Copy(&menu, in) != nil {
 		return errors.AssignError
@@ -41,7 +40,7 @@ func AddMenu(ctx *gin.Context, in *types.AddMenuRequest) error {
 }
 
 // UpdateMenu 更新菜单
-func UpdateMenu(ctx *gin.Context, in *types.UpdateMenuRequest) error {
+func UpdateMenu(ctx *core.Context, in *types.UpdateMenuRequest) error {
 	inMenu := model.Menu{}
 	if copier.Copy(&inMenu, in) != nil {
 		return errors.AssignError
@@ -62,18 +61,18 @@ func UpdateMenu(ctx *gin.Context, in *types.UpdateMenuRequest) error {
 
 	// 之前为接口，现在修改类型不为接口，则删除之前的rbac数据
 	if menu.Type == "A" && in.Type != "A" {
-		_, _ = global.Casbin.RemoveFilteredPolicy(1, menu.Path, menu.Method)
+		_, _ = ctx.Enforcer().Instance().RemoveFilteredPolicy(1, menu.Path, menu.Method)
 	}
 
 	// 之前和现在都为接口，且存在方法或者路径变更时则更新rbac数据
 	if menu.Type == "A" && in.Type == "A" && (menu.Method != in.Method || menu.Path != in.Path) {
-		oldPolices := global.Casbin.GetFilteredPolicy(1, menu.Path, menu.Method)
+		oldPolices := ctx.Enforcer().Instance().GetFilteredPolicy(1, menu.Path, menu.Method)
 		if len(oldPolices) != 0 {
 			var newPolices [][]string
 			for _, val := range oldPolices {
 				newPolices = append(newPolices, []string{val[0], in.Path, in.Method})
 			}
-			_, _ = global.Casbin.UpdatePolicies(oldPolices, newPolices)
+			_, _ = ctx.Enforcer().Instance().UpdatePolicies(oldPolices, newPolices)
 		}
 	}
 
@@ -97,7 +96,7 @@ func UpdateMenu(ctx *gin.Context, in *types.UpdateMenuRequest) error {
 			for _, val := range roles {
 				newPolices = append(newPolices, []string{val.Keyword, in.Path, in.Method})
 			}
-			_, _ = global.Casbin.AddPolicies(newPolices)
+			_, _ = ctx.Enforcer().Instance().AddPolicies(newPolices)
 		}
 	}
 
@@ -113,7 +112,7 @@ func UpdateMenu(ctx *gin.Context, in *types.UpdateMenuRequest) error {
 }
 
 // DeleteMenu 删除菜单
-func DeleteMenu(ctx *gin.Context, in *types.DeleteMenuRequest) error {
+func DeleteMenu(ctx *core.Context, in *types.DeleteMenuRequest) error {
 	if in.ID == 1 {
 		return errors.DeleteRootMenuError
 	}
@@ -132,7 +131,7 @@ func DeleteMenu(ctx *gin.Context, in *types.DeleteMenuRequest) error {
 	// 删除当前id中的类型为api的rbac权限表
 	apiList, _ := menu.All(ctx, "id in ? and type='A'", ids)
 	for _, item := range apiList {
-		_, _ = global.Casbin.RemoveFilteredPolicy(1, item.Path, item.Method)
+		_, _ = ctx.Enforcer().Instance().RemoveFilteredPolicy(1, item.Path, item.Method)
 	}
 
 	// 从数据库删除菜单

@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	json "github.com/json-iterator/go"
-	"github.com/limeschool/easy-admin/server/core/runtime"
-	"github.com/limeschool/easy-admin/server/core/trace"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/core"
 	"go.uber.org/zap"
 	"strings"
 	"time"
@@ -29,9 +27,13 @@ func (w ResponseWriterWrapper) WriteString(s string) (int, error) {
 }
 
 func RequestLog() gin.HandlerFunc {
-	white := global.Config.Middleware.RequestLog.Whitelist
 
-	return func(ctx *gin.Context) {
+	white := core.GlobalConfig().Middleware.RequestLog.Whitelist
+
+	return func(c *gin.Context) {
+		ctx := core.New(c)
+		defer ctx.Release()
+
 		method := strings.ToLower(ctx.Request.Method)
 		path := ctx.Request.URL.String()
 		if strings.Contains(path, "?") {
@@ -46,7 +48,7 @@ func RequestLog() gin.HandlerFunc {
 		now := time.Now()
 		blw := ResponseWriterWrapper{Body: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
 		ctx.Writer = blw
-		req := runtime.RequestInfo(ctx)
+		req := RequestInfo(ctx.Gin())
 
 		ctx.Next()
 
@@ -60,7 +62,7 @@ func RequestLog() gin.HandlerFunc {
 			res = blw.Body.String()
 		}
 
-		trace.Logger(ctx).WithOptions(zap.WithCaller(false)).Info("request-info",
+		ctx.Logger().WithOptions(zap.WithCaller(false)).Info("request-info",
 			zap.Any("path", ctx.Request.URL.Path),
 			zap.Any("method", ctx.Request.Method),
 			zap.Any("user_agent", ctx.Request.Header.Get("User-Agent")),

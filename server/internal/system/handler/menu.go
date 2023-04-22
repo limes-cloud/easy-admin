@@ -2,55 +2,67 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func AllMenu(ctx *gin.Context) {
+func AllMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if resp, err := service.AllMenu(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func AddMenu(ctx *gin.Context) {
+func AddMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.AddMenuRequest{}
 	if err := ctx.ShouldBindJSON(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.AddMenu(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateMenu(ctx *gin.Context) {
+func UpdateMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UpdateMenuRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.UpdateMenu(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func DeleteMenu(ctx *gin.Context) {
+func DeleteMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.DeleteMenuRequest{}
 	if ctx.ShouldBind(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.DeleteMenu(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }

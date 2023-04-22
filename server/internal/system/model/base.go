@@ -1,15 +1,13 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/orm"
-	"github.com/limeschool/easy-admin/server/core/trace"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/tools"
 	"gorm.io/gorm"
 )
 
 const (
-	_Orm = "system"
+	_orm = "system"
 )
 
 // dataMap 数据字典
@@ -21,10 +19,10 @@ var dataMap = map[string]string{
 }
 
 // Database 进行数据库选择
-func database(ctx *gin.Context) *gorm.DB {
-	return global.Orm[_Orm].WithContext(trace.Context(ctx))
+func database(ctx *core.Context) *gorm.DB {
+	return ctx.Orm().GetDB(_orm).WithContext(ctx.SourceCtx())
 }
 
 func transferErr(err error) error {
-	return orm.TransferErr(dataMap, err)
+	return tools.TransferErr(dataMap, err)
 }

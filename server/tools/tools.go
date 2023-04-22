@@ -3,7 +3,6 @@ package tools
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"math"
 	"math/rand"
@@ -20,21 +19,6 @@ func RandomCode(len int) string {
 	rand.Seed(time.Now().Unix())
 	var code = rand.Intn(int(math.Pow10(len)) - int(math.Pow10(len-1)))
 	return strconv.Itoa(code + int(math.Pow10(len-1)))
-}
-
-func ClientIP(ctx *gin.Context) string {
-	ip := ctx.ClientIP()
-	if ip == "::1" {
-		ip = ctx.GetHeader("X-Real-IP")
-	}
-	return ip
-}
-
-func DataDup(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(err.Error(), "Duplicate")
 }
 
 func ParsePwd(password string) (string, error) {

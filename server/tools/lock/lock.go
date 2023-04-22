@@ -40,7 +40,6 @@ func NewLock(redis *redis.Client, key string) Lock {
 func (l *lock) AcquireFunc(f func() error, do func() error) error {
 	for {
 		// 获取数据
-
 		if err := f(); err == nil {
 			return nil
 		}
@@ -51,21 +50,23 @@ func (l *lock) AcquireFunc(f func() error, do func() error) error {
 		}
 
 		// 防止频繁自旋
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 
+	// 在获取一下redis数据，防止重复读取数据库
+	if err := f(); err == nil {
+		return nil
+	}
 	return do()
 }
 
-// Acquire 获取分布式锁
+// Acquire 获取分布式锁，不建议直接使用此方法，可以使用AcquireFunc
 func (l *lock) Acquire() {
 	for {
 		// 获得锁
 		if res := l.redis.SetNX(context.TODO(), l.key, true, l.duration); res.Err() == nil && res.Val() {
 			break
 		}
-		// 防止频繁自旋
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -77,6 +78,7 @@ func (l *lock) TryAcquire() bool {
 	return false
 }
 
+// Release 释放锁
 func (l *lock) Release() {
 	l.redis.Del(context.TODO(), l.key)
 }

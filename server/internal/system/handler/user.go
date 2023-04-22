@@ -2,146 +2,176 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func PageUser(ctx *gin.Context) {
-	// 检验参数
+func PageUser(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.PageUserRequest{}
 	if ctx.ShouldBind(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
 	if list, total, err := service.PageUser(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.List(ctx, in.Page, len(list), int(total), list)
+		ctx.RespList(total, list)
 	}
 }
 
-func CurUser(ctx *gin.Context) {
+func CurUser(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if user, err := service.CurrentUser(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, user)
+		ctx.RespData(user)
 	}
 }
 
-func AddUser(ctx *gin.Context) {
-	// 检验参数
+func AddUser(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.AddUserRequest{}
 	if err := ctx.ShouldBindJSON(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if err := service.AddUser(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateUser(ctx *gin.Context) {
-	// 检验参数
+func UpdateUser(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UpdateUserRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if err := service.UpdateUser(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateUserinfo(ctx *gin.Context) {
-	// 检验参数
+func UpdateUserinfo(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UpdateUserinfoRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if err := service.UpdateCurrentUser(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateUserinfoByVerify(ctx *gin.Context) {
-	// 检验参数
-	in := types.UpdateUserinfoByVerifyRequest{}
+func UpdateUserinfoByVerify(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
+	in := types.UpdateUserinfoByVerifyRequest{
+		CaptchaName: "user",
+	}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if err := service.UpdateUserinfoByVerify(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func DeleteUser(ctx *gin.Context) {
-	// 检验参数
+func DeleteUser(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.DeleteUserRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if err := service.DeleteUser(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UserLogin(ctx *gin.Context) {
-	// 检验参数
-	in := types.UserLoginRequest{}
+func UserLogin(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
+	in := types.UserLoginRequest{
+		CaptchaName: "login",
+	}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	// 调用实现
 	if resp, err := service.UserLogin(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func RefreshToken(ctx *gin.Context) {
+func RefreshToken(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if resp, err := service.RefreshToken(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func UserLogout(ctx *gin.Context) {
+func UserLogout(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if err := service.UserLogout(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
 // UserMenus 获取用户的菜单列表
-func UserMenus(ctx *gin.Context) {
+func UserMenus(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if tree, err := service.CurrentUserMenuTree(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, tree)
+		ctx.RespData(tree)
 	}
 }

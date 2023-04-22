@@ -1,12 +1,12 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/types"
 )
 
 type LoginLog struct {
-	orm.CreateModel
+	types.CreateModel
 	Phone       string `json:"phone"`
 	IP          string `json:"ip"`
 	Address     string `json:"address"`
@@ -21,17 +21,17 @@ func (u LoginLog) TableName() string {
 	return "tb_system_login_log"
 }
 
-func (u *LoginLog) Create(ctx *gin.Context) error {
+func (u *LoginLog) Create(ctx *core.Context) error {
 	return transferErr(database(ctx).Create(u).Error)
 }
 
-func (u *LoginLog) Page(ctx *gin.Context, options orm.PageOptions) ([]LoginLog, int64, error) {
+func (u *LoginLog) Page(ctx *core.Context, options types.PageOptions) ([]LoginLog, int64, error) {
 	list, total := make([]LoginLog, 0), int64(0)
 
 	db := database(ctx).Model(u)
 
 	if options.Model != nil {
-		db = orm.GormWhere(db, u.TableName(), options.Model)
+		db = ctx.Orm().GormWhere(db, u.TableName(), options.Model)
 	}
 
 	if options.Scopes != nil {

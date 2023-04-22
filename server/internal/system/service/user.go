@@ -4,18 +4,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/forgoer/openssl"
-	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
-	"github.com/limeschool/easy-admin/server/core/captcha"
-	"github.com/limeschool/easy-admin/server/core/jwt"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/consts"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 	"github.com/limeschool/easy-admin/server/tools"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	tps "github.com/limeschool/easy-admin/server/types"
 	"gorm.io/gorm"
 	"time"
 )
@@ -26,10 +23,10 @@ const (
 )
 
 // CurrentAdminTeamIds 获取当前用户的管理的部门id
-func CurrentAdminTeamIds(ctx *gin.Context) ([]int64, error) {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return nil, err
+func CurrentAdminTeamIds(ctx *core.Context) ([]int64, error) {
+	md := ctx.Metadata()
+	if md == nil {
+		return nil, errors.MetadataError
 	}
 
 	user := model.User{}
@@ -41,10 +38,10 @@ func CurrentAdminTeamIds(ctx *gin.Context) ([]int64, error) {
 }
 
 // CurrentUser 获取当前用户信息
-func CurrentUser(ctx *gin.Context) (*model.User, error) {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return nil, err
+func CurrentUser(ctx *core.Context) (*model.User, error) {
+	md := ctx.Metadata()
+	if md == nil {
+		return nil, errors.MetadataError
 	}
 
 	user := model.User{}
@@ -52,7 +49,7 @@ func CurrentUser(ctx *gin.Context) (*model.User, error) {
 }
 
 // PageUser 获取用户分页信息
-func PageUser(ctx *gin.Context, in *types.PageUserRequest) ([]*model.User, int64, error) {
+func PageUser(ctx *core.Context, in *types.PageUserRequest) ([]*model.User, int64, error) {
 	user := model.User{}
 	// 获取用户所管理的部门
 	ids, err := CurrentAdminTeamIds(ctx)
@@ -60,7 +57,7 @@ func PageUser(ctx *gin.Context, in *types.PageUserRequest) ([]*model.User, int64
 		return nil, 0, err
 	}
 
-	return user.Page(ctx, orm.PageOptions{
+	return user.Page(ctx, tps.PageOptions{
 		Page:     in.Page,
 		PageSize: in.PageSize,
 		Model:    in,
@@ -71,7 +68,7 @@ func PageUser(ctx *gin.Context, in *types.PageUserRequest) ([]*model.User, int64
 }
 
 // AddUser 新增用户信息
-func AddUser(ctx *gin.Context, in *types.AddUserRequest) error {
+func AddUser(ctx *core.Context, in *types.AddUserRequest) error {
 	user := model.User{}
 	if in.Nickname == "" {
 		in.Nickname = in.Name
@@ -96,7 +93,7 @@ func AddUser(ctx *gin.Context, in *types.AddUserRequest) error {
 }
 
 // UpdateUser 更新用户信息
-func UpdateUser(ctx *gin.Context, in *types.UpdateUserRequest) error {
+func UpdateUser(ctx *core.Context, in *types.UpdateUserRequest) error {
 	user := model.User{}
 	if user.OneByID(ctx, in.ID) != nil {
 		return errors.DBNotFoundError
@@ -135,14 +132,14 @@ func UpdateUser(ctx *gin.Context, in *types.UpdateUserRequest) error {
 }
 
 // UpdateCurrentUser 更新当前用户信息
-func UpdateCurrentUser(ctx *gin.Context, in *types.UpdateUserinfoRequest) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func UpdateCurrentUser(ctx *core.Context, in *types.UpdateUserinfoRequest) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
 
 	user := model.User{}
-	if err = copier.Copy(&user, in); err != nil {
+	if err := copier.Copy(&user, in); err != nil {
 		return errors.AssignError
 	}
 	user.ID = md.UserID
@@ -151,7 +148,7 @@ func UpdateCurrentUser(ctx *gin.Context, in *types.UpdateUserinfoRequest) error 
 }
 
 // DeleteUser 删除用户信息
-func DeleteUser(ctx *gin.Context, in *types.DeleteUserRequest) error {
+func DeleteUser(ctx *core.Context, in *types.DeleteUserRequest) error {
 	// 超级管理员不允许删除
 	if in.ID == 1 {
 		return errors.SuperAdminDelError
@@ -176,14 +173,14 @@ func DeleteUser(ctx *gin.Context, in *types.DeleteUserRequest) error {
 }
 
 // UpdateUserinfoByVerify 更新用户重要数据
-func UpdateUserinfoByVerify(ctx *gin.Context, in *types.UpdateUserinfoByVerifyRequest) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func UpdateUserinfoByVerify(ctx *core.Context, in *types.UpdateUserinfoByVerifyRequest) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
 
 	// 判断验证码是否正确
-	if !captcha.VerifyEmail(ctx, in.CaptchaID, in.Captcha) {
+	if err := ctx.EmailCaptcha("user").Verify(in.CaptchaID, in.Captcha); err != nil {
 		return errors.CaptchaError
 	}
 
@@ -196,16 +193,16 @@ func UpdateUserinfoByVerify(ctx *gin.Context, in *types.UpdateUserinfoByVerifyRe
 }
 
 // UserLogout 用户退出登陆
-func UserLogout(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func UserLogout(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
-	return jwt.Clear(ctx, md.UserID)
+	return ctx.Jwt().Clear(md.UserID)
 }
 
 // UserLogin 用户登陆
-func UserLogin(ctx *gin.Context, in *types.UserLoginRequest) (resp *types.UserLoginResponse, err error) {
+func UserLogin(ctx *core.Context, in *types.UserLoginRequest) (resp *types.UserLoginResponse, err error) {
 	resp = new(types.UserLoginResponse)
 	defer func() {
 		if !(errors.Is(err, errors.UserDisableError) ||
@@ -215,15 +212,14 @@ func UserLogin(ctx *gin.Context, in *types.UserLoginRequest) (resp *types.UserLo
 	}()
 
 	// 判断验证码是否正确
-	if !captcha.VerifyImage(ctx, in.CaptchaID, in.Captcha) {
+	if err = ctx.ImageCaptcha(in.CaptchaName).Verify(in.CaptchaID, in.Captcha); err != nil {
 		err = errors.CaptchaError
 		return
 	}
 
 	// 密码解密
-	cert := global.Cert[decodePasswordCert]
 	passByte, _ := base64.StdEncoding.DecodeString(in.Password)
-	decryptData, err := openssl.RSADecrypt(passByte, cert)
+	decryptData, err := openssl.RSADecrypt(passByte, ctx.Cert().GetCert(decodePasswordCert))
 	if err != nil {
 		err = errors.RsaPasswordError
 		return
@@ -277,7 +273,7 @@ func UserLogin(ctx *gin.Context, in *types.UserLoginRequest) (resp *types.UserLo
 	}
 
 	// 生成登陆token
-	if resp.Token, err = jwt.Create(ctx, &metadata.Value{
+	if resp.Token, err = ctx.Jwt().Create(user.ID, &tps.Metadata{
 		UserID:    user.ID,
 		RoleID:    user.RoleID,
 		RoleKey:   user.Role.Keyword,
@@ -293,44 +289,39 @@ func UserLogin(ctx *gin.Context, in *types.UserLoginRequest) (resp *types.UserLo
 }
 
 // RefreshToken 用户刷新token
-func RefreshToken(ctx *gin.Context) (*types.UserLoginResponse, error) {
-	claims, expired, maxExpired := jwt.ParseMapClaimsAndExpired(ctx)
-	if claims == nil {
-		return nil, errors.TokenDataError
+func RefreshToken(ctx *core.Context) (*types.UserLoginResponse, error) {
+	md, err := ctx.Jwt().Parse()
+	if md == nil {
+		return nil, errors.MetadataError
 	}
 
-	if !expired {
+	if err == nil {
 		return nil, errors.RefreshActiveTokenError
 	}
 
-	if maxExpired {
+	if !err.CanRenewal() {
 		return nil, errors.RefTokenExpiredError
 	}
 
-	md, err := metadata.Parse(claims)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err := jwt.Create(ctx, md)
-	if err != nil {
-		return nil, err
+	token, er := ctx.Jwt().Create(md.UserID, md)
+	if er != nil {
+		return nil, er
 	}
 
 	return &types.UserLoginResponse{
 		Token: token,
-	}, err
+	}, er
 }
 
 // CurrentUserMenuTree 获取当前用户的菜单树
-func CurrentUserMenuTree(ctx *gin.Context) (tree.Tree, error) {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return nil, err
+func CurrentUserMenuTree(ctx *core.Context) (tree.Tree, error) {
+	md := ctx.Metadata()
+	if md == nil {
+		return nil, errors.MetadataError
 	}
 
 	// 如果是超级管理员就直接返回全部菜单
-	if md.RoleKey == global.JwtSuperAdmin {
+	if md.RoleKey == consts.JwtSuperAdmin {
 		return AllMenu(ctx)
 	}
 

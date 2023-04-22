@@ -1,9 +1,13 @@
 package config
 
 type Email struct {
-	Template map[string]string `mapstructure:"template"`
-	Company  string            `mapstructure:"company"`
-	User     string            `mapstructure:"user"`
-	Host     string            `mapstructure:"host"`
-	Password string            `mapstructure:"password"`
+	Template []struct {
+		Name    string
+		Subject string
+		Src     string
+	}
+	Company  string
+	User     string
+	Host     string
+	Password string
 }

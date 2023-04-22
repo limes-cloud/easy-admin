@@ -2,22 +2,42 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
+	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func Captcha(ctx *gin.Context) {
-	if resp, err := service.ImageCaptcha(ctx); err != nil {
-		response.Error(ctx, err)
+func Captcha(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
+	in := types.CaptchaRequest{}
+	if ctx.ShouldBind(&in) != nil {
+		ctx.RespError(errors.ParamsError)
+		return
+	}
+
+	if resp, err := service.ImageCaptcha(ctx, &in); err != nil {
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func EmailCaptcha(ctx *gin.Context) {
-	if resp, err := service.EmailCaptcha(ctx); err != nil {
-		response.Error(ctx, err)
+func EmailCaptcha(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
+	in := types.CaptchaRequest{}
+	if ctx.ShouldBind(&in) != nil {
+		ctx.RespError(errors.ParamsError)
+		return
+	}
+
+	if resp, err := service.EmailCaptcha(ctx, &in); err != nil {
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }

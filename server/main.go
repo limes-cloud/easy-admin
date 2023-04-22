@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/limeschool/easy-admin/server/core"
-	"github.com/limeschool/easy-admin/server/global"
 	systemRouter "github.com/limeschool/easy-admin/server/internal/system/router"
 	"github.com/limeschool/easy-admin/server/middleware"
 	"log"
@@ -27,8 +26,8 @@ func main() {
 	systemRouter.Init(api)
 
 	// 启动服务
-	service := global.Config.Service
-	if err := engine.Run(service.Addr); err != nil {
+	srv := core.GlobalConfig().Service
+	if err := engine.Run(srv.Addr); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -1,14 +1,14 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	"github.com/limeschool/easy-admin/server/types"
 )
 
 type Team struct {
-	orm.BaseModel
+	types.BaseModel
 	Name        string  `json:"name"`
 	Description string  `json:"description,omitempty"`
 	ParentID    int64   `json:"parent_id"`
@@ -43,11 +43,12 @@ func (t *Team) TableName() string {
 }
 
 // Create 创建部门
-func (t *Team) Create(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (t *Team) Create(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	t.Operator = md.Username
 	t.OperatorID = md.UserID
 
@@ -55,7 +56,7 @@ func (t *Team) Create(ctx *gin.Context) error {
 }
 
 // Tree 获取部门树
-func (t *Team) Tree(ctx *gin.Context) (tree.Tree, error) {
+func (t *Team) Tree(ctx *core.Context) (tree.Tree, error) {
 	// 获取部门列表
 	list := make([]*Team, 0)
 	if err := database(ctx).Find(&list).Error; err != nil {
@@ -71,7 +72,7 @@ func (t *Team) Tree(ctx *gin.Context) (tree.Tree, error) {
 }
 
 // All 获取全部部门
-func (t *Team) All(ctx *gin.Context) ([]*Team, error) {
+func (t *Team) All(ctx *core.Context) ([]*Team, error) {
 	list := make([]*Team, 0)
 	if err := database(ctx).Find(&list).Error; err != nil {
 		return nil, transferErr(err)
@@ -80,11 +81,12 @@ func (t *Team) All(ctx *gin.Context) ([]*Team, error) {
 }
 
 // Update 更新部门信息
-func (t *Team) Update(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (t *Team) Update(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	t.Operator = md.Username
 	t.OperatorID = md.UserID
 
@@ -92,7 +94,7 @@ func (t *Team) Update(ctx *gin.Context) error {
 }
 
 // DeleteByID 通过id删除指定部门 以及部门下的部门
-func (t *Team) DeleteByID(ctx *gin.Context, id int64) error {
+func (t *Team) DeleteByID(ctx *core.Context, id int64) error {
 	list, err := t.All(ctx)
 	if err != nil {
 		return err

@@ -2,47 +2,56 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 )
 
-func UpdateRoleMenu(ctx *gin.Context) {
+func UpdateRoleMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.AddRoleMenuRequest{}
 	if err := ctx.ShouldBindJSON(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.UpdateRoleMenu(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func RoleMenuIds(ctx *gin.Context) {
+func RoleMenuIds(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.RoleMenuIdsRequest{}
 	if err := ctx.ShouldBind(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if ids, err := service.RoleMenuIds(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, ids)
+		ctx.RespData(ids)
 	}
 }
 
-func RoleMenu(ctx *gin.Context) {
+func RoleMenu(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.RoleMenuRequest{}
 	if err := ctx.ShouldBind(&in); err != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if ids, err := service.RoleMenu(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, ids)
+		ctx.RespData(ids)
 	}
 }

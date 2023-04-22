@@ -2,17 +2,17 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/consts"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	"github.com/limeschool/easy-admin/server/types"
 	"time"
 )
 
 type User struct {
-	orm.BaseModel
+	types.BaseModel
 	TeamID      int64   `json:"team_id"`
 	RoleID      int64   `json:"role_id"`
 	Name        string  `json:"name"`
@@ -36,19 +36,19 @@ func (u User) TableName() string {
 }
 
 // OneByID 通过id查询用户信息
-func (u *User) OneByID(ctx *gin.Context, id int64) error {
+func (u *User) OneByID(ctx *core.Context, id int64) error {
 	db := database(ctx).Preload("Role").Preload("Team")
 	return transferErr(db.First(u, id).Error)
 }
 
 // OneByPhone 通过phone查询用户信息
-func (u *User) OneByPhone(ctx *gin.Context, phone string) error {
+func (u *User) OneByPhone(ctx *core.Context, phone string) error {
 	db := database(ctx).Preload("Role").Preload("Team")
 	return transferErr(db.First(u, "phone=?", phone).Error)
 }
 
 // PasswordByPhone 查询全部字段信息包括密码
-func (u *User) PasswordByPhone(ctx *gin.Context, phone string) (string, error) {
+func (u *User) PasswordByPhone(ctx *core.Context, phone string) (string, error) {
 	m := map[string]any{}
 	if err := database(ctx).First(u, "phone = ?", phone).Scan(&m).Error; err != nil {
 		return "", transferErr(err)
@@ -57,13 +57,13 @@ func (u *User) PasswordByPhone(ctx *gin.Context, phone string) (string, error) {
 }
 
 // Page 查询分页数据
-func (u *User) Page(ctx *gin.Context, options orm.PageOptions) ([]*User, int64, error) {
+func (u *User) Page(ctx *core.Context, options types.PageOptions) ([]*User, int64, error) {
 	list, total := make([]*User, 0), int64(0)
 
 	db := database(ctx).Model(u)
 
 	if options.Model != nil {
-		db = orm.GormWhere(db, u.TableName(), options.Model)
+		db = ctx.Orm().GormWhere(db, u.TableName(), options.Model)
 	}
 
 	if options.Scopes != nil {
@@ -81,10 +81,10 @@ func (u *User) Page(ctx *gin.Context, options orm.PageOptions) ([]*User, int64, 
 }
 
 // Create 创建用户信息
-func (u *User) Create(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *User) Create(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
@@ -94,15 +94,15 @@ func (u *User) Create(ctx *gin.Context) error {
 	return transferErr(database(ctx).Create(u).Error)
 }
 
-func (u *User) UpdateLastLogin(ctx *gin.Context, t int64) error {
+func (u *User) UpdateLastLogin(ctx *core.Context, t int64) error {
 	return transferErr(database(ctx).Model(u).Where("id", u.ID).Update("last_login", t).Error)
 }
 
 // Update 更新用户信息
-func (u *User) Update(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *User) Update(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
@@ -116,12 +116,12 @@ func (u *User) Update(ctx *gin.Context) error {
 }
 
 // DeleteByID 通过id删除用户信息
-func (u *User) DeleteByID(ctx *gin.Context, id int64) error {
+func (u *User) DeleteByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).Delete(u, id).Error)
 }
 
 // GetAdminTeamIdByUserId 通过用户id获取用户所管理的部门id
-func (u *User) GetAdminTeamIdByUserId(ctx *gin.Context, userId int64) ([]int64, error) {
+func (u *User) GetAdminTeamIdByUserId(ctx *core.Context, userId int64) ([]int64, error) {
 	// 操作者信息
 	user := User{}
 	if err := user.OneByID(ctx, userId); err != nil {
@@ -135,13 +135,13 @@ func (u *User) GetAdminTeamIdByUserId(ctx *gin.Context, userId int64) ([]int64, 
 	}
 
 	// 当用户权限是当前部门时，直接返回当前部门的id
-	if role.DataScope == global.CURTEAM {
+	if role.DataScope == consts.CURTEAM {
 		return []int64{user.TeamID}, nil
 	}
 
 	ids := make([]int64, 0)
 	// 当用户权限是自定义部门时，直接返回自定义部门id
-	if role.DataScope == global.CUSTOM {
+	if role.DataScope == consts.CUSTOM {
 		return ids, json.Unmarshal([]byte(*role.TeamIds), &ids)
 	}
 
@@ -156,10 +156,10 @@ func (u *User) GetAdminTeamIdByUserId(ctx *gin.Context, userId int64) ([]int64, 
 
 	// 根据部门树取值
 	switch role.DataScope {
-	case global.ALLTEAM:
+	case consts.ALLTEAM:
 		// 全部数据权限时返回所有部门id
 		ids = tree.GetTreeID(teamTree)
-	case global.DOWNTEAM:
+	case consts.DOWNTEAM:
 		// 下级部门权限时，排除当前部门id
 		ids = tree.GetTreeID(teamTree)
 		if len(ids) > 2 {

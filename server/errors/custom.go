@@ -32,6 +32,7 @@ var (
 	TokenExpiredError     = &types.Response{Code: 4001, Msg: "登陆信息已过期，请重新登陆"}
 	RefTokenExpiredError  = &types.Response{Code: 4000, Msg: "太长时间未登陆，请重新登陆"}
 	DulDeviceLoginError   = &types.Response{Code: 4000, Msg: "你已在其他设备登陆"}
+	MetadataError         = &types.Response{Code: 4000, Msg: "获取用户元数据失败"}
 	TokenDataError        = &types.Response{Code: 4000, Msg: "token数据异常失败"}
 	TokenValidateError    = &types.Response{Code: 4000, Msg: "token验证失败"}
 	TokenEmptyError       = &types.Response{Code: 4000, Msg: "token信息不存在"}
@@ -56,10 +57,11 @@ var (
 
 	// upload相关
 	InitUploadError           = &types.Response{Code: 1000060, Msg: "文件上传初始化失败"}
-	FileLimitMaxSizeError     = &types.Response{Code: 1000061, Msg: "文件超过规定大小限制"}
+	UploadLimitMaxSizeError   = &types.Response{Code: 1000061, Msg: "文件超过规定大小限制"}
 	OpenFileError             = &types.Response{Code: 1000062, Msg: "上传文件打开失败"}
 	UploadTypeNotSupportError = &types.Response{Code: 1000063, Msg: "不支持上传此类型文件"}
-	UploadTypeError           = &types.Response{Code: 1000063, Msg: "存在不允许上传的文件类型"}
+	UploadTypeError           = &types.Response{Code: 1000064, Msg: "存在不允许上传的文件类型"}
+	UploadDirError            = &types.Response{Code: 1000065, Msg: "非法的上传目录"}
 
 	// registry
 	InitDockerError         = &types.Response{Code: 1000070, Msg: "初始化docker-cli 失败"}

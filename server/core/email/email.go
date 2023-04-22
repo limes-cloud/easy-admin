@@ -2,8 +2,8 @@ package email
 
 import (
 	"bytes"
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/config"
+	"github.com/limeschool/easy-admin/server/errors"
 	"html/template"
 	"io/ioutil"
 	"net/smtp"
@@ -11,93 +11,148 @@ import (
 	"strings"
 )
 
-type Interface interface {
-	Send(email, subject, context string) error
-	SendAll(emails []string, subject, context string) error
-}
-
 type email struct {
-	template map[string]string
-}
-
-type sender struct {
-	template string
+	template map[string]struct {
+		subject string
+		html    string
+	}
 	user     string
 	host     string
 	password string
-	title    string
+	company  string
 }
 
-var (
-	Templates = make(map[string]string)
-)
+type Email interface {
+	NewSender(tpName string) Sender
+}
 
-const (
-	defaultTemplate = "default"
-)
+type sender struct {
+	tp string
+	*email
+}
 
-func Init() {
-	for name, fileName := range global.Config.Email.Template {
-		file, err := os.Open(fileName)
+type Sender interface {
+	Send(email string, data any) error
+	SendAll(emails []string, data any) error
+}
+
+// New 初始化email实例
+func New(conf config.Email) Email {
+	emailIns := email{
+		user:     conf.User,
+		host:     conf.Host,
+		password: conf.Password,
+		company:  conf.Company,
+		template: map[string]struct {
+			subject string
+			html    string
+		}{},
+	}
+
+	for _, item := range conf.Template {
+		file, err := os.Open(item.Src)
 		if err != nil {
 			panic("邮箱模板初始化失败:" + err.Error())
 		}
-		key, err := ioutil.ReadAll(file)
+		val, err := ioutil.ReadAll(file)
 		if err != nil {
 			panic("读取邮箱模板失败:" + err.Error())
 		}
-		Templates[name] = string(key)
+		emailIns.template[item.Name] = struct {
+			subject string
+			html    string
+		}{subject: item.Subject, html: string(val)}
 	}
+
+	return &emailIns
 }
 
-func New(tp ...string) Interface {
-	t := ""
-	if len(tp) != 0 && tp[0] != "" {
-		t = Templates[tp[0]]
-	} else {
-		t = Templates[defaultTemplate]
-	}
-
+// NewSender
+//
+//	@Description: 新建一个发送器
+//	@receiver e
+//	@param tpName 需要发送的模板名
+//	@return Sender
+func (e *email) NewSender(tpName string) Sender {
 	return &sender{
-		user:     global.Config.Email.User,
-		host:     global.Config.Email.Host,
-		password: global.Config.Email.Password,
-		title:    global.Config.Email.Company,
-		template: t,
+		email: e,
+		tp:    tpName,
 	}
 }
 
-func (e *sender) parseTemplate(context string) string {
-	n := template.New("")
-	t, err := n.Parse(e.template)
+// Send
+//
+//	@Description: 向指定的邮箱发送邮件
+//	@receiver e
+//	@param email 需要发送的邮箱
+//	@param data 模板参数
+//	@return error
+func (e *sender) Send(email string, data any) error {
+	if !e.hasTemplate() {
+		return errors.New("not exist template")
+	}
+	html, err := e.parseTemplate(data)
 	if err != nil {
-		return context
+		return err
 	}
-
-	html := bytes.NewBuffer([]byte(""))
-	if err = t.Execute(html, gin.H{
-		"content": context,
-	}); err != nil {
-		return context
-	}
-	return html.String()
-}
-
-func (e *sender) Send(email string, subject, context string) error {
-	context = e.parseTemplate(context)
 	hp := strings.Split(e.host, ":")
 	auth := smtp.PlainAuth("", e.user, e.password, hp[0])
 	ct := "Content-Type: text/html; charset=UTF-8"
-	msg := []byte("To: " + email + "\r\nFrom: " + e.title + "\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + context)
+	subject := e.email.template[e.tp].subject
+	msg := []byte("To: " + email + "\r\nFrom: " + e.company + "\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + html)
 	return smtp.SendMail(e.host, auth, e.user, []string{email}, msg)
 }
 
-func (e *sender) SendAll(emails []string, subject, context string) error {
-	context = e.parseTemplate(context)
+// SendAll
+//
+//	@Description: 批量发送邮件信息
+//	@receiver e
+//	@param emails 需要发送的邮箱列表
+//	@param data  模板填充变量
+//	@return error
+func (e *sender) SendAll(emails []string, data any) error {
+	if !e.hasTemplate() {
+		return errors.New("not exist template")
+	}
+	html, err := e.parseTemplate(data)
+	if err != nil {
+		return err
+	}
 	hp := strings.Split(e.host, ":")
 	auth := smtp.PlainAuth("", e.user, e.password, hp[0])
 	ct := "Content-Type: text/html; charset=UTF-8"
 	to := strings.Join(emails, ";")
-	msg := []byte("To: " + to + "\r\nFrom: " + e.title + ">\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + context)
+	subject := e.email.template[e.tp].subject
+	msg := []byte("To: " + to + "\r\nFrom: " + e.company + ">\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + html)
 	return smtp.SendMail(e.host, auth, e.user, emails, msg)
+}
+
+// hasTemplate
+//
+//	@Description: 判断是否存在模板
+//	@receiver e
+//	@return bool
+func (e *sender) hasTemplate() bool {
+	_, is := e.email.template[e.tp]
+	return is
+}
+
+// parseTemplate
+//
+//	@Description: 解析模板变量
+//	@receiver e
+//	@param data
+//	@return string
+func (e *sender) parseTemplate(data any) (string, error) {
+	n := template.New("")
+	htmlTemplate := e.email.template[e.tp].html
+	t, err := n.Parse(htmlTemplate)
+	if err != nil {
+		return "", err
+	}
+	html := bytes.NewBuffer([]byte(""))
+	if err = t.Execute(html, data); err != nil {
+		return "", err
+	}
+	return html.String(), nil
 }

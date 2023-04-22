@@ -2,12 +2,13 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
-	"github.com/limeschool/easy-admin/server/global"
+	"github.com/limeschool/easy-admin/server/consts"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
+	"github.com/limeschool/easy-admin/server/tools"
 	"github.com/limeschool/easy-admin/server/tools/lock"
 	"github.com/limeschool/easy-admin/server/tools/tree"
+	"github.com/limeschool/easy-admin/server/types"
 	"gorm.io/gorm"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ type Menu struct {
 	OperatorID int64   `json:"operator_id"`
 	Children   []*Menu `json:"children,omitempty" gorm:"-"`
 	IsHome     bool    `json:"is_home" gorm:"->"`
-	orm.BaseModel
+	types.BaseModel
 }
 
 const (
@@ -64,47 +65,50 @@ func (u *Menu) TableName() string {
 }
 
 // Create 创建菜单
-func (u *Menu) Create(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *Menu) Create(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
 
-	if u.Permission == global.BaseApi {
-		orm.DelayDelCache(global.Redis, RedisBaseApiKey)
+	if u.Permission == consts.BaseApi {
+		tools.DelayDelCache(ctx.Redis().GetRedis(consts.Cache), RedisBaseApiKey)
 	}
 	// 创建菜单
 	return transferErr(database(ctx).Create(&u).Error)
 }
 
 // OneByID 通过id查询指定菜单
-func (u *Menu) OneByID(ctx *gin.Context, id int64) error {
+func (u *Menu) OneByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).First(u, id).Error)
 }
 
 // OneByName 通过name条件查询指定菜单
-func (u *Menu) OneByName(ctx *gin.Context, name string) error {
+func (u *Menu) OneByName(ctx *core.Context, name string) error {
 	return transferErr(database(ctx).First(u, "name=?", name).Error)
 }
 
 // GetBaseApiPath 获取基础菜单api列表
-func (u *Menu) GetBaseApiPath(ctx *gin.Context) map[string]bool {
+func (u *Menu) GetBaseApiPath(ctx *core.Context) map[string]bool {
 	lockKey := RedisBaseApiKey + "_lock"
 
-	lc := lock.NewLockWithDuration(global.Redis, lockKey, 10*time.Second)
+	redis := ctx.Redis().GetRedis(consts.Cache)
+
+	lc := lock.NewLockWithDuration(redis, lockKey, 10*time.Second)
 	defer lc.Release()
 
 	data := map[string]bool{}
 	err := lc.AcquireFunc(func() error {
-		if str, err := global.Redis.Get(ctx, RedisBaseApiKey).Result(); err != nil {
+		if str, err := redis.Get(ctx, RedisBaseApiKey).Result(); err != nil {
 			return err
 		} else {
 			return json.Unmarshal([]byte(str), &data)
 		}
 	}, func() error {
-		list, err := u.All(ctx, "permission = ? and type = 'A'", global.BaseApi)
+		list, err := u.All(ctx, "permission = ? and type = 'A'", consts.BaseApi)
 		if err != nil {
 			return err
 		}
@@ -116,7 +120,7 @@ func (u *Menu) GetBaseApiPath(ctx *gin.Context) map[string]bool {
 
 		// 将数据库中的数据存入缓存
 		b, _ := json.Marshal(data)
-		global.Redis.Set(ctx, RedisBaseApiKey, string(b), 1*time.Hour)
+		redis.Set(ctx, RedisBaseApiKey, string(b), 1*time.Hour)
 		return nil
 	})
 
@@ -128,13 +132,13 @@ func (u *Menu) GetBaseApiPath(ctx *gin.Context) map[string]bool {
 }
 
 // All 获取全部的菜单列表
-func (u *Menu) All(ctx *gin.Context, cond ...interface{}) ([]*Menu, error) {
+func (u *Menu) All(ctx *core.Context, cond ...interface{}) ([]*Menu, error) {
 	var list []*Menu
 	return list, transferErr(database(ctx).Order("weight desc").Find(&list, cond...).Error)
 }
 
 // Tree 获取菜单树
-func (u *Menu) Tree(ctx *gin.Context, cond ...interface{}) (tree.Tree, error) {
+func (u *Menu) Tree(ctx *core.Context, cond ...interface{}) (tree.Tree, error) {
 	list, err := u.All(ctx, cond...)
 	if err != nil {
 		return nil, err
@@ -147,22 +151,23 @@ func (u *Menu) Tree(ctx *gin.Context, cond ...interface{}) (tree.Tree, error) {
 }
 
 // Update 更新菜单
-func (u *Menu) Update(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *Menu) Update(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
 
-	if u.Permission == global.BaseApi {
-		orm.DelayDelCache(global.Redis, RedisBaseApiKey)
+	if u.Permission == consts.BaseApi {
+		tools.DelayDelCache(ctx.Redis().GetRedis(consts.Cache), RedisBaseApiKey)
 	}
 	return transferErr(database(ctx).Updates(u).Error)
 }
 
 // UpdateHome 更新菜单首页
-func (u *Menu) UpdateHome(ctx *gin.Context, menuID int64) error {
+func (u *Menu) UpdateHome(ctx *core.Context, menuID int64) error {
 	err := database(ctx).Table(u.TableName()).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id != ?", menuID).Update("is_home", false).Error; err != nil {
 			return err
@@ -173,13 +178,13 @@ func (u *Menu) UpdateHome(ctx *gin.Context, menuID int64) error {
 }
 
 // DeleteByIds 通过条件删除菜单
-func (u *Menu) DeleteByIds(ctx *gin.Context, ids []int64) error {
+func (u *Menu) DeleteByIds(ctx *core.Context, ids []int64) error {
 	if err := database(ctx).First(u, "id in ?", ids).Error; err != nil {
 		return transferErr(err)
 	}
 	// 删除基础api缓存
-	if u.Permission == global.BaseApi {
-		orm.DelayDelCache(global.Redis, RedisBaseApiKey)
+	if u.Permission == consts.BaseApi {
+		tools.DelayDelCache(ctx.Redis().GetRedis(consts.Cache), RedisBaseApiKey)
 	}
 	return transferErr(database(ctx).Delete(u).Error)
 }

@@ -2,14 +2,14 @@ package model
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/metadata"
-	"github.com/limeschool/easy-admin/server/core/orm"
+	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/errors"
+	"github.com/limeschool/easy-admin/server/types"
 	"time"
 )
 
 type Notice struct {
-	orm.BaseModel
+	types.BaseModel
 	Type       string `json:"type"`
 	Title      string `json:"title"`
 	Status     *bool  `json:"status"`
@@ -24,11 +24,12 @@ func (u Notice) TableName() string {
 }
 
 // OneByID 通过id查询通知详细信息
-func (u *Notice) OneByID(ctx *gin.Context, id int64) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *Notice) OneByID(ctx *core.Context, id int64) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	nu := NoticeUser{
 		UserID:   md.UserID,
 		NoticeID: id,
@@ -40,11 +41,12 @@ func (u *Notice) OneByID(ctx *gin.Context, id int64) error {
 }
 
 // UnReadNum 通过id查询通知详细信息
-func (u *Notice) UnReadNum(ctx *gin.Context) (int64, error) {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return 0, err
+func (u *Notice) UnReadNum(ctx *core.Context) (int64, error) {
+	md := ctx.Metadata()
+	if md == nil {
+		return 0, errors.MetadataError
 	}
+
 	nu := NoticeUser{}
 	db := database(ctx).Model(u)
 
@@ -61,13 +63,13 @@ func (u *Notice) UnReadNum(ctx *gin.Context) (int64, error) {
 }
 
 // Page 查询分页数据
-func (u *Notice) Page(ctx *gin.Context, options orm.PageOptions) ([]*Notice, int64, error) {
+func (u *Notice) Page(ctx *core.Context, options types.PageOptions) ([]*Notice, int64, error) {
 	list, total := make([]*Notice, 0), int64(0)
 
 	db := database(ctx).Model(u)
 
 	if options.Model != nil {
-		db = orm.GormWhere(db, u.TableName(), options.Model)
+		db = ctx.Orm().GormWhere(db, u.TableName(), options.Model)
 	}
 
 	if options.Scopes != nil {
@@ -84,11 +86,12 @@ func (u *Notice) Page(ctx *gin.Context, options orm.PageOptions) ([]*Notice, int
 }
 
 // Create 创建通知信息
-func (u *Notice) Create(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *Notice) Create(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
 
@@ -97,11 +100,12 @@ func (u *Notice) Create(ctx *gin.Context) error {
 }
 
 // Update 更新通知信息
-func (u *Notice) Update(ctx *gin.Context) error {
-	md, err := metadata.GetFormContext(ctx)
-	if err != nil {
-		return err
+func (u *Notice) Update(ctx *core.Context) error {
+	md := ctx.Metadata()
+	if md == nil {
+		return errors.MetadataError
 	}
+
 	u.Operator = md.Username
 	u.OperatorID = md.UserID
 	// 执行更新
@@ -109,6 +113,6 @@ func (u *Notice) Update(ctx *gin.Context) error {
 }
 
 // DeleteByID 通过id删除通知信息
-func (u *Notice) DeleteByID(ctx *gin.Context, id int64) error {
+func (u *Notice) DeleteByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).Delete(u, id).Error)
 }

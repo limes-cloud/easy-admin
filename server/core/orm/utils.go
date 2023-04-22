@@ -7,18 +7,18 @@ import (
 	"strings"
 )
 
-func getReflectElem(val reflect.Value) reflect.Value {
-	for val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	return val
-}
-
-func GormWhere(db *gorm.DB, tb string, val interface{}) *gorm.DB {
+// GormWhere
+//
+//	@Description: 根据入参结构自动拼接where字段
+//	@receiver o
+//	@param db gorm.DB
+//	@param tb 表明
+//	@param val struct结构体 map会采用等式 struct会根据tag规则
+//	@return *gorm.DB
+func (o *orm) GormWhere(db *gorm.DB, tb string, val interface{}) *gorm.DB {
 	if val == nil {
 		return db
 	}
-
 	// 对src进行断言,对指针进行下寻
 	reflectVal := reflect.ValueOf(val)
 	reflectVal = getReflectElem(reflectVal)
@@ -84,6 +84,13 @@ func GormWhere(db *gorm.DB, tb string, val interface{}) *gorm.DB {
 		}
 	}
 	return db
+}
+
+func getReflectElem(val reflect.Value) reflect.Value {
+	for val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	return val
 }
 
 func isBlank(value reflect.Value) bool {

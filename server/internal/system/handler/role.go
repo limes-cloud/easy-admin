@@ -2,69 +2,81 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/limeschool/easy-admin/server/core/response"
+	"github.com/limeschool/easy-admin/server/consts"
+	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
-	"github.com/limeschool/easy-admin/server/global"
 	"github.com/limeschool/easy-admin/server/internal/system/service"
 	"github.com/limeschool/easy-admin/server/internal/system/types"
 	"github.com/limeschool/easy-admin/server/tools"
 )
 
-func AllRole(ctx *gin.Context) {
+func AllRole(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	if resp, err := service.AllRole(ctx); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Data(ctx, resp)
+		ctx.RespData(resp)
 	}
 }
 
-func AddRole(ctx *gin.Context) {
+func AddRole(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.AddRoleRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
-	if !tools.InList([]string{global.ALLTEAM, global.DOWNTEAM, global.CURTEAM, global.CUSTOM}, in.DataScope) {
-		response.Error(ctx, errors.ParamsError)
+	if !tools.InList([]string{consts.ALLTEAM, consts.DOWNTEAM, consts.CURTEAM, consts.CUSTOM}, in.DataScope) {
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
 	if err := service.AddRole(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func UpdateRole(ctx *gin.Context) {
+func UpdateRole(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.UpdateRoleRequest{}
 	if ctx.ShouldBindJSON(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
-	if !tools.InList([]string{global.ALLTEAM, global.DOWNTEAM, global.CURTEAM, global.CUSTOM}, in.DataScope) {
-		response.Error(ctx, errors.ParamsError)
+	if !tools.InList([]string{consts.ALLTEAM, consts.DOWNTEAM, consts.CURTEAM, consts.CUSTOM}, in.DataScope) {
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 
 	if err := service.UpdateRole(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }
 
-func DeleteRole(ctx *gin.Context) {
+func DeleteRole(c *gin.Context) {
+	ctx := core.New(c)
+	defer ctx.Release()
+
 	in := types.DeleteRoleRequest{}
 	if ctx.ShouldBind(&in) != nil {
-		response.Error(ctx, errors.ParamsError)
+		ctx.RespError(errors.ParamsError)
 		return
 	}
 	if err := service.DeleteRole(ctx, &in); err != nil {
-		response.Error(ctx, err)
+		ctx.RespError(err)
 	} else {
-		response.Success(ctx)
+		ctx.RespSuccess()
 	}
 }

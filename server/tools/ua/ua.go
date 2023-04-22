@@ -318,7 +318,6 @@ func parse(userAgent string) (clients properties) {
 	bua := []byte(userAgent)
 	for i, c := range bua {
 
-		//fmt.Println(string(c), c)
 		switch {
 		case c == 41: // )
 			addToken()
@@ -371,15 +370,6 @@ func checkVer(s string) (name, v string) {
 	default:
 		return s, ""
 	}
-
-	// for _, c := range v {
-	// 	if (c >= 48 && c <= 57) || c == 46 {
-	// 	} else {
-	// 		return s, ""
-	// 	}
-	// }
-
-	// return s[:i], s[i+1:]
 
 }
 
