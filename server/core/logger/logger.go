@@ -10,15 +10,30 @@ import (
 
 type logger struct {
 	*zap.Logger
-	c config.Log
+	c *config.Log
 }
 
 type Logger interface {
+	// WithID
+	//
+	//	@Description: 设置链路日志id
+	//	@param id 请求唯一id
+	//	@return *zap.Logger
 	WithID(id string) *zap.Logger
+	// Field
+	//
+	//	@Description: 获取链路日志字段
+	//	@return string 链路日志key
 	Field() string
 }
 
-func New(conf config.Log, srvName string) Logger {
+// New
+//
+//	@Description: 初始化日志器
+//	@receiver conf 日志配置
+//	@receiver srvName 服务名
+//	@return Logger 日志器
+func New(conf *config.Log, srvName string) Logger {
 	// 编码器配置
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "time",
@@ -66,21 +81,10 @@ func New(conf config.Log, srvName string) Logger {
 		)}
 }
 
-// Field
-//
-//	@Description: 获取链路日志字段名
-//	@receiver l
-//	@return string
 func (l *logger) Field() string {
 	return l.c.Field
 }
 
-// WithID
-//
-//	@Description: 设置链路日志id
-//	@receiver l
-//	@param id
-//	@return *zap.Logger
 func (l *logger) WithID(id string) *zap.Logger {
 	return l.Logger.With(zap.Any(l.c.Field, id))
 }

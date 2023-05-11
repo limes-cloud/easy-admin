@@ -5,9 +5,10 @@ import (
 	"github.com/limeschool/easy-admin/server/consts"
 	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
+	"github.com/limeschool/easy-admin/server/internal/system/model"
 )
 
-func Casbin() gin.HandlerFunc {
+func Enforce() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := core.New(c)
 		defer ctx.Release()
@@ -15,20 +16,21 @@ func Casbin() gin.HandlerFunc {
 		path := ctx.FullPath()
 		method := ctx.Request.Method
 
-		// 白名单直接放行
-		if ctx.Enforcer().IsWhitelist(method, path) {
-			return
-		}
-
 		// 获取元数据,不存在则跳过权限验证
 		md := ctx.Metadata()
 		if md == nil {
 			return
 		}
 
-		// 白名单或者超管直接放行
-		// || ctx.Enforcer().IsBaseApi(method, path)  todo
+		// 超级管理放行
 		if md.RoleKey == consts.JwtSuperAdmin {
+			return
+		}
+
+		// 基础api放行
+		menu := model.Menu{}
+		baseApis := menu.GetBaseApiPath(ctx)
+		if baseApis[method+":"+path] {
 			return
 		}
 

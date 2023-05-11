@@ -1,5 +1,5 @@
 <template>
-  <a-layout-footer class="footer">{{ appStore.title }}</a-layout-footer>
+  <a-layout-footer class="footer">{{ appStore.copyright }}</a-layout-footer>
 </template>
 
 <script lang="ts" setup>

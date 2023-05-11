@@ -9,12 +9,10 @@ import (
 	"github.com/limeschool/easy-admin/server/core/logger"
 	"github.com/limeschool/easy-admin/server/core/orm"
 	"github.com/limeschool/easy-admin/server/core/redis"
-	"sync"
 )
 
 var (
-	g    = new(global)
-	once = sync.Once{}
+	g = new(global)
 )
 
 type global struct {
@@ -28,18 +26,7 @@ type global struct {
 	captcha  captcha.Captcha
 }
 
-// InitGlobal 初始化global实例
-func InitGlobal(config *config.Config, opts ...options) {
-	g.config = config
-	once.Do(func() {
-		for _, opt := range opts {
-			opt(g)
-		}
-	})
-}
-
-// UpdateGlobal 更新实例信息
-func UpdateGlobal(config *config.Config, opts ...options) {
+func initGlobal(config *config.Config, opts ...option) {
 	g.config = config
 	for _, opt := range opts {
 		opt(g)
@@ -48,4 +35,16 @@ func UpdateGlobal(config *config.Config, opts ...options) {
 
 func GlobalConfig() *config.Config {
 	return g.config
+}
+
+func GlobalOrm() orm.Orm {
+	return g.orm
+}
+
+func GlobalLogger() logger.Logger {
+	return g.logger
+}
+
+func GlobalRedis() redis.Redis {
+	return g.redis
 }

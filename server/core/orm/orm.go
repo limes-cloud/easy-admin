@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"gorm.io/plugin/dbresolver"
+	"sync"
 )
 
 const (
@@ -38,20 +39,48 @@ func open(drive, dsn string) gorm.Dialector {
 }
 
 type orm struct {
+	mu sync.RWMutex
 	db map[string]*gorm.DB
 }
 
 type Orm interface {
+	// Get
+	//
+	//	@Description: 获取指定名称的orm实例，如果实例不存在则会返回报错
+	//	@param name 实例名称
+	//	@return *gorm.DB
+	//	@return error
 	Get(name string) (*gorm.DB, error)
+	// GetDB
+	//
+	//	@Description: 获取指定名称的orm实例，如果实例不存在则返回nil
+	//	@param name 实例名称
+	//	@return *gorm.DB
 	GetDB(name string) *gorm.DB
+	// GormWhere
+	//
+	//	@Description: 根据入参结构自动拼接where字段
+	//	@param db gorm.DB gorm.DB实例
+	//	@param tb 表名
+	//	@param val 查询的结构可以为 struct/map，struct会根据tag规则，map会采用等式
+	//	@return *gorm.DB
 	GormWhere(db *gorm.DB, tb string, val interface{}) *gorm.DB
 }
 
-// New 创建orm实例
+// New
+//
+//	@Description: 初始化数据库
+//	@param conf 数据库配置
+//	@param logger 日志器
+//	@return Orm 数据库实例
 func New(cm []config.Orm, logger logger.Logger) Orm {
 	ormIns := orm{
 		db: make(map[string]*gorm.DB),
+		mu: sync.RWMutex{},
 	}
+
+	ormIns.mu.Lock()
+	defer ormIns.mu.Unlock()
 
 	for _, conf := range cm {
 		if !conf.Enable {
@@ -91,26 +120,19 @@ func New(cm []config.Orm, logger logger.Logger) Orm {
 	return &ormIns
 }
 
-// Get
-//
-//	@Description: 获取指定名称的orm实例，如果实例不存在则会报错
-//	@receiver o
-//	@param name 实例名称
-//	@return *gorm.DB
-//	@return error
 func (o *orm) Get(name string) (*gorm.DB, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	if o.db[name] == nil {
 		return nil, errors.New("not exist db")
 	}
 	return o.db[name], nil
 }
 
-// GetDB
-//
-//	@Description: 获取指定名称的orm实例，如果实例不存在则返回nil
-//	@receiver o
-//	@param name
-//	@return *gorm.DB
 func (o *orm) GetDB(name string) *gorm.DB {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.db[name]
 }

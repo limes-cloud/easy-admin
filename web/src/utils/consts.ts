@@ -17,4 +17,17 @@ export const densityList = [
   },
 ];
 
+export const noticeList = [
+  {
+    key: 'notice',
+    name: '系统公告',
+    color: 'blue',
+  },
+  {
+    key: 'upgrade',
+    name: '版本更新',
+    color: 'orange',
+  },
+];
+
 export default null;

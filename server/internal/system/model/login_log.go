@@ -7,14 +7,14 @@ import (
 
 type LoginLog struct {
 	types.CreateModel
-	Phone       string `json:"phone"`
-	IP          string `json:"ip"`
-	Address     string `json:"address"`
-	Browser     string `json:"browser"`
-	Device      string `json:"device"`
-	Status      bool   `json:"status"`
-	Code        int    `json:"code"`
-	Description string `json:"description"`
+	Phone       string `json:"phone" gorm:"not null;type:varbinary(32);comment:手机号"`
+	IP          string `json:"ip" gorm:"not null;type:varbinary(64);comment:登陆IP"`
+	Address     string `json:"address" gorm:"not null;size:128;comment:登陆地址"`
+	Browser     string `json:"browser" gorm:"not null;size:128;comment:登陆浏览器"`
+	Device      string `json:"device" gorm:"not null;size:128;comment:登录设备"`
+	Status      bool   `json:"status" gorm:"not null;comment:登录状态"`
+	Code        int    `json:"code" gorm:"not null;size:32;comment:错误码"`
+	Description string `json:"description" gorm:"not null;size:256;comment:登录备注"`
 }
 
 func (u LoginLog) TableName() string {

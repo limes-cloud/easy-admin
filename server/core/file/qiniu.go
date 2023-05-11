@@ -15,11 +15,11 @@ import (
 )
 
 type qiniu struct {
-	config        config.File
+	config        *config.File
 	bucketManager *oss.BucketManager
 }
 
-func NewQiniu(conf config.File) (Store, error) {
+func NewQiniu(conf *config.File) (Store, error) {
 	if conf.Bucket == "" || conf.AccessKey == "" || conf.SecretKey == "" {
 		return nil, errors.New("upload config error")
 	}

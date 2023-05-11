@@ -34,6 +34,13 @@
 </script>
 
 <style lang="less" scoped>
+  .i-dialog-footer {
+    border-top: 1px solid #f2f2f2 !important;
+    .arco-btn {
+      margin-right: 15px;
+    }
+  }
+
   .loadingBox {
     position: fixed;
     top: 0;
@@ -50,6 +57,21 @@
 </style>
 
 <style lang="less">
+  .arco-table-th,
+  .arco-table-td {
+    color: rgb(var(--gray-8)) !important;
+  }
+  .general-card {
+    padding-top: 20px;
+  }
+  .arco-tabs-nav-type-capsule {
+    justify-content: flex-start !important;
+  }
+  .arco-tabs-nav-type-capsule
+    .arco-tabs-nav-tab:not(.arco-tabs-nav-tab-scroll) {
+    justify-content: flex-start !important;
+  }
+
   .cursor-pointer {
     cursor: pointer;
   }

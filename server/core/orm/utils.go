@@ -7,14 +7,6 @@ import (
 	"strings"
 )
 
-// GormWhere
-//
-//	@Description: 根据入参结构自动拼接where字段
-//	@receiver o
-//	@param db gorm.DB
-//	@param tb 表明
-//	@param val struct结构体 map会采用等式 struct会根据tag规则
-//	@return *gorm.DB
 func (o *orm) GormWhere(db *gorm.DB, tb string, val interface{}) *gorm.DB {
 	if val == nil {
 		return db

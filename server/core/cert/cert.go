@@ -5,10 +5,12 @@ import (
 	"github.com/limeschool/easy-admin/server/config"
 	"io"
 	"os"
+	"sync"
 )
 
 type cert struct {
-	m map[string][]byte
+	mu sync.RWMutex
+	m  map[string][]byte
 }
 
 type Cert interface {
@@ -18,8 +20,13 @@ type Cert interface {
 
 func New(cs []config.Cert) Cert {
 	ct := cert{
-		m: make(map[string][]byte),
+		m:  make(map[string][]byte),
+		mu: sync.RWMutex{},
 	}
+
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+
 	for _, item := range cs {
 		file, err := os.Open(item.Path)
 		if err != nil {
@@ -42,6 +49,9 @@ func New(cs []config.Cert) Cert {
 //	@return []byte
 //	@return error
 func (o *cert) Get(name string) ([]byte, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	if o.m[name] == nil {
 		return nil, errors.New("not exist cert")
 	}
@@ -55,5 +65,8 @@ func (o *cert) Get(name string) ([]byte, error) {
 //	@param name
 //	@return []byte
 func (o *cert) GetCert(name string) []byte {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.m[name]
 }

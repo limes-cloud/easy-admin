@@ -3,9 +3,11 @@ package model
 import "github.com/limeschool/easy-admin/server/core"
 
 type NoticeUser struct {
-	NoticeID int64 `json:"notice_id"`
-	UserID   int64 `json:"user_id"`
-	ReadAt   int64 `json:"read_at"`
+	NoticeID int64  `json:"notice_id" gorm:"not null;size:32;comment:通知id"`
+	UserID   int64  `json:"user_id" gorm:"not null;size:32;comment:人员id"`
+	ReadAt   int64  `json:"read_at" gorm:"not null;size:32;comment:阅读时间"`
+	User     User   `gorm:"->"`
+	Notice   Notice `gorm:"->"`
 }
 
 func (u NoticeUser) TableName() string {

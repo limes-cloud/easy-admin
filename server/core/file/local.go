@@ -9,10 +9,10 @@ import (
 )
 
 type local struct {
-	conf config.File
+	conf *config.File
 }
 
-func NewLocal(conf config.File) (Store, error) {
+func NewLocal(conf *config.File) (Store, error) {
 	if conf.LocalDir == "" {
 		return nil, errors.New("upload config error")
 	}
@@ -21,8 +21,7 @@ func NewLocal(conf config.File) (Store, error) {
 	}, nil
 }
 
-func (s *local) Put(key string, r io.Reader) error {
-	path := s.conf.LocalDir + "/" + key
+func (s *local) Put(path string, r io.Reader) error {
 	if err := s.makeDir(path); err != nil {
 		return err
 	}
@@ -36,8 +35,8 @@ func (s *local) Put(key string, r io.Reader) error {
 	return nil
 }
 
-func (s *local) PutFromLocal(key string, localPath string) error {
-	path := s.conf.LocalDir + "/" + key
+func (s *local) PutFromLocal(path string, localPath string) error {
+
 	if err := s.makeDir(path); err != nil {
 		return err
 	}

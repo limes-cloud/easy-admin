@@ -1,10 +1,7 @@
 <template>
   <div class="container">
     <div class="logo">
-      <img
-        alt="logo"
-        src="//p3-armor.byteimg.com/tos-cn-i-49unhts6dw/dfdba5317c0c20ce20e64fac803d52bc.svg~tplv-49unhts6dw-image.image"
-      />
+      <img alt="logo" :src="$logo ? $logo : logo" />
       <div class="logo-text">{{ appStore.title }}</div>
     </div>
     <div class="content">
@@ -120,6 +117,7 @@
   import { useUserStore, useAppStore } from '@/store';
   import useLoading from '@/hooks/loading';
   import { captcha } from '@/api/system/user';
+  import logo from '@/assets/logo.png';
 
   const timeInter: any = ref(null);
   const router = useRouter();
@@ -151,7 +149,7 @@
   });
 
   const fetchCaptcha = async () => {
-    const data = await captcha();
+    const data = await captcha({ name: 'login' });
     captchaData.value = data.data;
     userInfo.captcha_id = captchaData.value.id;
 

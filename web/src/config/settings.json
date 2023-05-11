@@ -5,7 +5,7 @@
   "colorWeak": false,
   "navbar": true,
   "menu": true,
-  "topMenu": true,
+  "topMenu": false,
   "hideMenu": false,
   "menuCollapse": false,
   "footer": true,
@@ -18,5 +18,11 @@
   "serverMenu": [],
   "permissions":[],
   "isLoading":false,
-  "loadingTitle":""
-}
+  "loadingTitle":"",
+  "debug": true ,
+  "errorCode": 400,
+  "successCode": 200,
+  "copyright": "Copyright © 2023 qlime.cn. All rights reserved. ",
+  "staticUrl": "/",
+  "logo": "/static/logo.png"
+} 

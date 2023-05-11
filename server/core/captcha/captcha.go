@@ -3,10 +3,10 @@ package captcha
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/limeschool/easy-admin/server/config"
 	e "github.com/limeschool/easy-admin/server/core/email"
 	"github.com/limeschool/easy-admin/server/core/redis"
+	"sync"
 
 	"math"
 	"math/rand"
@@ -21,45 +21,44 @@ type res struct {
 }
 
 type captcha struct {
-	rs    redis.Redis
+	mu    sync.RWMutex
+	cache redis.Redis
 	email e.Email
 	m     map[string]config.Captcha
 }
 
 type Captcha interface {
-	Image(ctx *gin.Context, name string) Image
-	Email(ctx *gin.Context, name string) Email
+	Image(ip, name string) Image
+	Email(ip, name string) Email
 }
 
 func New(cs []config.Captcha, rs redis.Redis, email e.Email) Captcha {
 	cpIns := captcha{
-		rs:    rs,
+		cache: rs,
 		email: email,
 		m:     make(map[string]config.Captcha),
+		mu:    sync.RWMutex{},
 	}
+
+	cpIns.mu.Lock()
+	defer cpIns.mu.Unlock()
+
 	for _, item := range cs {
 		cpIns.m[item.Name+":"+item.Type] = item
 	}
 	return &cpIns
 }
 
-// isTemplate 判断是否存在指定的模板
-func (c *captcha) isTemplate(name, tp string) bool {
-	_, is := c.m[name+":"+tp]
-	return is
-}
-
 // getTemplate 获取指定模板
-func (c *captcha) getTemplate(name, tp string) config.Captcha {
-	return c.m[name+":"+tp]
+func (c *captcha) getTemplate(name, tp string) (config.Captcha, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	temp, is := c.m[name+":"+tp]
+	return temp, is
 }
 
-// clientUUID 获取用户对应验证场景的唯一id
-func (c *captcha) clientUUID(ctx *gin.Context, name, tp string) string {
-	ip := ctx.ClientIP()
-	if ip == "::1" {
-		ip = ctx.GetHeader("X-Real-IP")
-	}
+// cid 获取用户对应验证场景的唯一id
+func (c *captcha) cid(ip, name, tp string) string {
 	return fmt.Sprintf("captcha:%s:%s:%x", name, tp, md5.Sum([]byte(ip)))
 }
 
@@ -71,21 +70,21 @@ func (c *captcha) randomCode(len int) string {
 }
 
 // Image  实例化图形验证码
-func (c *captcha) Image(ctx *gin.Context, name string) Image {
+func (c *captcha) Image(ip, name string) Image {
 	return &image{
 		name:    name,
 		tp:      "image",
 		captcha: c,
-		ctx:     ctx,
+		ip:      ip,
 	}
 }
 
 // Email  实例化邮箱验证码
-func (c *captcha) Email(ctx *gin.Context, name string) Email {
+func (c *captcha) Email(ip, name string) Email {
 	return &email{
 		name:    name,
 		tp:      "email",
 		captcha: c,
-		ctx:     ctx,
+		ip:      ip,
 	}
 }

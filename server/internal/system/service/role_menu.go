@@ -76,7 +76,7 @@ func RoleMenu(ctx *core.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
 	var menu model.Menu
 
 	if role.Keyword == consts.JwtSuperAdmin {
-		menus, _ = menu.All(ctx, "permission!=?", consts.BaseApi)
+		menus, _ = menu.All(ctx, "type!=?", consts.MenuBA)
 	} else {
 		// 查询角色所属菜单
 		rm := model.RoleMenu{}
@@ -95,7 +95,7 @@ func RoleMenu(ctx *core.Context, in *types.RoleMenuRequest) (tree.Tree, error) {
 		}
 
 		// 获取指定id的所有菜单
-		menus, _ = menu.All(ctx, "id in ? and permission!=?", ids, consts.BaseApi)
+		menus, _ = menu.All(ctx, "id in ? and type!=?", ids, consts.MenuBA)
 	}
 
 	var listTree []tree.Tree

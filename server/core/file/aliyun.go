@@ -12,7 +12,7 @@ type aliyun struct {
 	Bucket *oss.Bucket
 }
 
-func NewAliyun(conf config.File) (Store, error) {
+func NewAliyun(conf *config.File) (Store, error) {
 	if conf.Endpoint == "" || conf.AccessKeyID == "" || conf.AccessKeySecret == "" {
 		return nil, errors.New("upload config error")
 	}

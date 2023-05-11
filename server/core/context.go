@@ -125,11 +125,11 @@ func (ctx *Context) SourceCtx() context.Context {
 }
 
 func (ctx *Context) ImageCaptcha(name string) captcha.Image {
-	return g.captcha.Image(ctx.Gin(), name)
+	return g.captcha.Image(ctx.ClientIP(), name)
 }
 
 func (ctx *Context) EmailCaptcha(name string) captcha.Email {
-	return g.captcha.Email(ctx.Gin(), name)
+	return g.captcha.Email(ctx.ClientIP(), name)
 }
 
 func (ctx *Context) ClientIP() string {
@@ -141,5 +141,7 @@ func (ctx *Context) ClientIP() string {
 }
 
 func (ctx *Context) Jwt() jwt.JWT {
-	return jwt.New(ctx.Config().JWT, ctx.Redis(), ctx.Gin())
+	conf := ctx.Config().JWT
+	token := ctx.Gin().GetHeader(conf.Header)
+	return jwt.New(conf, ctx.Redis(), token)
 }

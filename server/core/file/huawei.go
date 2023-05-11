@@ -13,7 +13,7 @@ type huawei struct {
 	client *obs.ObsClient
 }
 
-func NewHuawei(conf config.File) (Store, error) {
+func NewHuawei(conf *config.File) (Store, error) {
 	if conf.Endpoint == "" || conf.Location == "" || conf.Bucket == "" || conf.AccessKey == "" || conf.SecretKey == "" {
 		return nil, errors.New("upload config error")
 	}

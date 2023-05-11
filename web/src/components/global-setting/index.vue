@@ -10,15 +10,14 @@
     :width="300"
     unmount-on-close
     :visible="visible"
-    :cancel-text="$t('settings.close')"
-    :ok-text="$t('settings.copySettings')"
+    cancel-text="关闭"
+    ok-text="确认"
     @ok="copySettings"
     @cancel="cancel"
   >
-    <template #title> {{ $t('settings.title') }} </template>
-    <Block :options="contentOpts" :title="$t('settings.content')" />
-    <Block :options="othersOpts" :title="$t('settings.otherSettings')" />
-    <a-alert>{{ $t('settings.alertContent') }}</a-alert>
+    <template #title> 系统配置 </template>
+    <Block :options="contentOpts" title="系统配置" />
+    <Block :options="othersOpts" title="其他设置" />
   </a-drawer>
 </template>
 
@@ -50,11 +49,6 @@
     },
     { name: 'settings.footer', key: 'footer', defaultVal: appStore.footer },
     { name: 'settings.tabBar', key: 'tabBar', defaultVal: appStore.tabBar },
-    {
-      name: 'settings.menuFromServer',
-      key: 'menuFromServer',
-      defaultVal: appStore.menuFromServer,
-    },
     {
       name: 'settings.menuWidth',
       key: 'menuWidth',

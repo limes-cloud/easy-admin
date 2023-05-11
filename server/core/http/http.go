@@ -35,18 +35,18 @@ type Request interface {
 	Delete(url string) (*response, error)
 }
 
-func New(c config.Http, logger *zap.Logger) Request {
+func New(conf *config.Http, logger *zap.Logger) Request {
 	client := resty.New()
-	if c.MaxRetryWaitTime == 0 {
-		c.RetryWaitTime = 5 * time.Second
+	if conf.MaxRetryWaitTime == 0 {
+		conf.RetryWaitTime = 5 * time.Second
 	}
-	if c.Timeout == 0 {
-		c.Timeout = 60 * time.Second
+	if conf.Timeout == 0 {
+		conf.Timeout = 60 * time.Second
 	}
-	client.SetRetryWaitTime(c.RetryWaitTime)
-	client.SetRetryMaxWaitTime(c.MaxRetryWaitTime)
-	client.SetRetryCount(c.RetryCount)
-	client.SetTimeout(c.Timeout)
+	client.SetRetryWaitTime(conf.RetryWaitTime)
+	client.SetRetryMaxWaitTime(conf.MaxRetryWaitTime)
+	client.SetRetryCount(conf.RetryCount)
+	client.SetTimeout(conf.Timeout)
 	return &request{
 		request:  client.R(),
 		logger:   logger,

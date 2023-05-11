@@ -1,66 +1,71 @@
 package captcha
 
 import (
+	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/mojocn/base64Captcha"
 )
 
 type image struct {
-	ctx  *gin.Context
-	name string
-	tp   string
-	*captcha
+	ip      string
+	name    string
+	tp      string
+	captcha *captcha
 }
 
 type Image interface {
+	// New  发送邮箱验证码
+	//
+	//	@param ip 用户ip，防止同一个用户多次发送验证码
+	//	@return res   验证码id，验证码图片base64编码，过期时间
+	//	@return error 验证通过则返回nil 否则返回定义错误原因
 	New() (*res, error)
+	// Verify 验证邮箱验证码
+	//
+	//	@param ctx 用户获取用户唯一场景id
+	//	@param id  验证码ID
+	//	@param answer 验证码
+	//	@return error 验证通过则返回nil 否则返回定义错误原因
 	Verify(id, answer string) error
 }
 
-// New
-//
-//	@Description:  生成验证码图片
-//	@receiver i
-//	@param ctx 用于获取用户唯一场景id，保证场景验证码数据唯一
-//	@return *captchaRes 返回验证码的uuid,base64,过期时间
-//	@return error
 func (i *image) New() (*res, error) {
-	if !i.isTemplate(i.name, i.tp) {
+	// 获取指定模板的配置
+	cp, is := i.captcha.getTemplate(i.name, i.tp)
+	if !is {
 		return nil, errors.New(fmt.Sprintf("%s captcha not exist", i.tp))
 	}
 
-	// 获取指定模板的配置
-	cp := i.getTemplate(i.name, i.tp)
-
 	// 生成随机验证码
-	answer := i.randomCode(cp.Length)
+	answer := i.captcha.randomCode(cp.Length)
 
-	// 生成二维码
+	// 生成验证码对应图片的base64
 	dt := base64Captcha.NewDriverDigit(cp.Height, cp.Width, cp.Length, cp.Skew, cp.DotCount)
 	item, err := dt.DrawCaptcha(answer)
 	if err != nil {
 		return nil, err
 	}
 
-	cache := i.rs.GetRedis(cp.Cache)
-	cid := i.clientUUID(i.ctx, i.name, i.tp)
+	// 获取验证码存储器
+	cache := i.captcha.cache.GetRedis(cp.Cache)
+	// 获取当前用户的场景唯一id
+	cid := i.captcha.cid(i.ip, i.name, i.tp)
 
 	// 清除上一次生成的结果,防止同时造成大量生成请求占用内存
-	if id, _ := cache.Get(i.ctx, cid).Result(); id != "" {
-		cache.Del(i.ctx, id)
+	if id, _ := cache.Get(context.Background(), cid).Result(); id != "" {
+		cache.Del(context.Background(), id)
 	}
 
-	// 进行结果缓存
+	// 获取当前验证码验证码唯一id
 	uid := uuid.New().String()
-	if err = cache.Set(i.ctx, uid, answer, cp.Expire).Err(); err != nil {
+	if err = cache.Set(context.Background(), uid, answer, cp.Expire).Err(); err != nil {
 		return nil, err
 	}
 
-	// 将答案ID挂载到当前的请求ip上
-	if err = cache.Set(i.ctx, cid, uid, cp.Expire).Err(); err != nil {
+	// 将本次验证码挂载到当前的场景id上
+	if err = cache.Set(context.Background(), cid, uid, cp.Expire).Err(); err != nil {
 		return nil, err
 	}
 
@@ -81,34 +86,38 @@ func (i *image) New() (*res, error) {
 //	@param answer 验证码内容
 //	@return error 验证通过则返回nil 否则返回定义错误原因
 func (i *image) Verify(id, answer string) error {
-	if !i.isTemplate(i.name, i.tp) {
+	// 获取指定模板的配置
+	cp, is := i.captcha.getTemplate(i.name, i.tp)
+	if !is {
 		return errors.New(fmt.Sprintf("%s captcha not exist", i.tp))
 	}
 
-	// 获取指定模板的配置
-	cp := i.getTemplate(i.name, i.tp)
+	// 获取验证码存储器
+	cache := i.captcha.cache.GetRedis(cp.Cache)
 
-	cache := i.rs.GetRedis(cp.Cache)
-	cid := i.clientUUID(i.ctx, i.name, i.tp)
+	// 获取当前用户的场景唯一id
+	cid := i.captcha.cid(i.ip, i.name, i.tp)
 
-	// 验证id是否存在
-	sid, err := cache.Get(i.ctx, cid).Result()
+	// 获取用户当前的验证码场景id
+	sid, err := cache.Get(context.Background(), cid).Result()
 	if err != nil {
 		return err
 	}
+	// 对比用户当前的验证码场景是否一致
 	if sid != id {
 		return errors.New(fmt.Sprintf("captcha id %s  not exist", id))
 	}
 
-	// 获取id的answer
-	ans, err := cache.Get(i.ctx, id).Result()
+	// 获取指定验证码id的答案
+	ans, err := cache.Get(context.Background(), id).Result()
 	if err != nil {
 		return err
 	}
+	// 对比答案是否一致
 	if ans != answer {
 		return errors.New("verify fail")
 	}
 
 	// 验证通过清除缓存
-	return cache.Del(i.ctx, cid, id).Err()
+	return cache.Del(context.Background(), cid, id).Err()
 }

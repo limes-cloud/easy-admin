@@ -53,9 +53,9 @@ func Registry(engine *gin.Engine) *gin.RouterGroup {
 		api.Use(JwtAuth())
 	}
 
-	// 开启casbin鉴权
+	// 开启rbac鉴权
 	if conf.Enforcer.Enable {
-		api.Use(Casbin())
+		api.Use(Enforce())
 	}
 
 	return api

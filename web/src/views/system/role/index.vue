@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <Breadcrumb />
-    <a-card class="general-card" title="角色管理">
+    <a-card class="general-card">
       <a-row style="margin-bottom: 16px; align-items: center">
         <a-col :span="12">
           <a-button
@@ -242,11 +242,11 @@
         </a-form-item>
         <a-form-item
           field="data_scope"
-          label="角色权限"
+          label="数据权限"
           :rules="[
             {
               required: true,
-              message: '角色权限是必填项',
+              message: '数据权限是必填项',
             },
           ]"
           :validate-trigger="['change', 'input']"

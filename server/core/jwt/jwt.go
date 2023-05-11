@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	jv4 "github.com/golang-jwt/jwt/v4"
 	"github.com/limeschool/easy-admin/server/config"
@@ -18,8 +17,8 @@ import (
 
 type jwt struct {
 	redis *redis.Client
-	conf  config.JWT
-	ctx   *gin.Context
+	conf  *config.JWT
+	token string
 }
 
 type JWT interface {
@@ -33,11 +32,11 @@ type JWT interface {
 	CheckUnique(userID int64) bool
 }
 
-func New(conf config.JWT, rd rd.Redis, ctx *gin.Context) JWT {
+func New(conf *config.JWT, rd rd.Redis, token string) JWT {
 	return &jwt{
 		redis: rd.GetRedis(conf.Cache),
-		ctx:   ctx,
 		conf:  conf,
+		token: token,
 	}
 }
 
@@ -63,12 +62,11 @@ func (j jwt) encode(data any) string {
 
 // Compare 对比token是否和缓存中的一致
 func (j jwt) Compare(userId int64) bool {
-	token := j.ctx.GetHeader(j.conf.Header)
 	st, err := j.redis.Get(context.Background(), j.uuid(userId)).Result()
 	if err != nil {
 		return false
 	}
-	return st == j.encode(token)
+	return st == j.encode(j.token)
 }
 
 // IsExist 判断缓存中是否存在用户的token
@@ -89,9 +87,9 @@ func (j jwt) Clear(userId int64) error {
 
 // Parse 解析用户token信息
 func (j jwt) Parse() (*types.Metadata, *jwtErr) {
-	token := j.ctx.GetHeader(j.conf.Header)
+
 	var m jv4.MapClaims = make(map[string]any)
-	parser, err := jv4.ParseWithClaims(token, &m, func(token *jv4.Token) (interface{}, error) {
+	parser, err := jv4.ParseWithClaims(j.token, &m, func(token *jv4.Token) (interface{}, error) {
 		return []byte(j.conf.Secret), nil
 	})
 

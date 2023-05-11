@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <Breadcrumb />
-    <a-card class="general-card" title="部门管理">
+    <a-card class="general-card">
       <a-row style="margin-bottom: 16px; align-items: center">
         <a-col :span="12">
           <a-button

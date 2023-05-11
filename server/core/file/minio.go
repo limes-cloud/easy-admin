@@ -15,10 +15,10 @@ import (
 
 type minio struct {
 	client *m.Client
-	config config.File
+	config *config.File
 }
 
-func NewMinio(conf config.File) (Store, error) {
+func NewMinio(conf *config.File) (Store, error) {
 	if conf.Bucket == "" || conf.AccessKey == "" || conf.SecretKey == "" || conf.Endpoint == "" {
 		return nil, errors.New("upload config error")
 	}

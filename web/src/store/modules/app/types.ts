@@ -21,5 +21,11 @@ export interface AppState {
   isLoading: boolean;
   permissions: string[];
   loadingTitle: string;
+  debug: boolean;
+  errorCode: number;
+  successCode: number;
+  copyright: string;
+  staticUrl: string;
+  logo: string;
   [key: string]: unknown;
 }

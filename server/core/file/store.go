@@ -37,12 +37,12 @@ type File interface {
 
 type file struct {
 	sub  string
-	conf config.File
+	conf *config.File
 	Store
 }
 
 // NewFile create new File instance.
-func NewFile(conf config.File, sub string) (File, error) {
+func NewFile(conf *config.File, sub string) (File, error) {
 	_, is := conf.SubDir[sub]
 	if !is {
 		return nil, errors.New("not support sub-dir")
@@ -109,6 +109,9 @@ func (s *file) Upload(key string, r io.Reader) (string, error) {
 	}
 
 	key = s.sub + "/" + s.Rename(key)
+	if s.conf.LocalDir != "" {
+		key = s.conf.LocalDir + "/" + key
+	}
 	return key, s.Store.Put(key, r)
 }
 
@@ -128,7 +131,9 @@ func (s *file) UploadFromLocal(key string, localPath string) (string, error) {
 	}
 
 	key = s.sub + "/" + s.Rename(key)
-
+	if s.conf.LocalDir != "" {
+		key = s.conf.LocalDir + "/" + key
+	}
 	return key, s.Store.PutFromLocal(key, localPath)
 }
 

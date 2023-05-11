@@ -37,6 +37,21 @@ func CurrentAdminTeamIds(ctx *core.Context) ([]int64, error) {
 	return ids, nil
 }
 
+// CurrentAdminRoleIds 获取当前用户的管理的角色id
+func CurrentAdminRoleIds(ctx *core.Context) ([]int64, error) {
+	md := ctx.Metadata()
+	if md == nil {
+		return nil, errors.MetadataError
+	}
+
+	role := model.Role{}
+	roleTree, err := role.Tree(ctx, md.RoleID)
+	if err != nil {
+		return nil, err
+	}
+	return tree.GetTreeID(roleTree), nil
+}
+
 // CurrentUser 获取当前用户信息
 func CurrentUser(ctx *core.Context) (*model.User, error) {
 	md := ctx.Metadata()
@@ -108,7 +123,18 @@ func UpdateUser(ctx *core.Context, in *types.UpdateUserRequest) error {
 		}
 	}
 
-	// 获取用户所管理的部门
+	// 修改角色时，也只允许修改到自己所管辖的角色
+	if in.RoleID != 0 && in.RoleID != user.RoleID {
+		ids, err := CurrentAdminRoleIds(ctx)
+		if err != nil {
+			return err
+		}
+		if !tools.InList(ids, in.RoleID) {
+			return errors.NotEditUserRoleError
+		}
+	}
+
+	// 获取用户能管理的部门
 	ids, err := CurrentAdminTeamIds(ctx)
 	if err != nil {
 		return err
@@ -194,11 +220,11 @@ func UpdateUserinfoByVerify(ctx *core.Context, in *types.UpdateUserinfoByVerifyR
 
 // UserLogout 用户退出登陆
 func UserLogout(ctx *core.Context) error {
-	md := ctx.Metadata()
-	if md == nil {
-		return errors.MetadataError
+	md, _ := ctx.Jwt().Parse()
+	if md != nil {
+		return ctx.Jwt().Clear(md.UserID)
 	}
-	return ctx.Jwt().Clear(md.UserID)
+	return nil
 }
 
 // UserLogin 用户登陆

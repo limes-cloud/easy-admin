@@ -9,16 +9,16 @@ import (
 
 type Role struct {
 	types.BaseModel
-	ParentID    int64   `json:"parent_id"`
-	Name        string  `json:"name" `
-	Keyword     string  `json:"keyword"`
-	Status      *bool   `json:"status,omitempty" `
-	Weight      *int    `json:"weight"`
-	Description *string `json:"description,omitempty"`
-	TeamIds     *string `json:"team_ids,omitempty"`
-	DataScope   string  `json:"data_scope,omitempty"`
-	Operator    string  `json:"operator"`
-	OperatorID  int64   `json:"operator_id"`
+	ParentID    int64   `json:"parent_id" gorm:"not null;size:32;comment:父角色id"`
+	Name        string  `json:"name" gorm:"not null;size:64;comment:角色名称"`
+	Keyword     string  `json:"keyword" gorm:"not null;type:varbinary(32);comment:角色关键字"`
+	Status      *bool   `json:"status,omitempty" gorm:"not null;comment:角色状态"`
+	Weight      *int    `json:"weight" gorm:"default:0;size:16;comment:角色权重"`
+	Description *string `json:"description,omitempty" gorm:"size:128;comment:角色备注"`
+	TeamIds     *string `json:"team_ids,omitempty" gorm:"type:text;comment:自定义权限部门id"`
+	DataScope   string  `json:"data_scope,omitempty" gorm:"not null;size:128;comment:数据权限"`
+	Operator    string  `json:"operator" gorm:"size:128;comment:操作人员名称"`
+	OperatorID  int64   `json:"operator_id" gorm:"size:32;comment:操作人员id"`
 	Children    []*Role `json:"children"  gorm:"-"`
 }
 

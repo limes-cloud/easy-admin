@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/limeschool/easy-admin/server/core"
+	"github.com/limeschool/easy-admin/server/install"
 	systemRouter "github.com/limeschool/easy-admin/server/internal/system/router"
 	"github.com/limeschool/easy-admin/server/middleware"
 	"log"
@@ -15,6 +16,9 @@ func main() {
 
 	// 核心组件初始化
 	core.Init()
+
+	// 进行系统初始化
+	install.Init()
 
 	// 注册中间件
 	api := middleware.Registry(engine)

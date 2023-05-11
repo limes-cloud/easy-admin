@@ -47,6 +47,7 @@ var (
 	NotEditTeamError     = &types.Response{Code: 1000041, Msg: "暂无此部门的修改权限"}
 	NotDelTeamError      = &types.Response{Code: 1000042, Msg: "暂无此部门的删除权限"}
 	NotAddTeamUserError  = &types.Response{Code: 1000043, Msg: "暂无此部门的人员创建权限"}
+	NotEditUserRoleError = &types.Response{Code: 1000043, Msg: "暂无此人员的角色修改权限"}
 	NotEditTeamUserError = &types.Response{Code: 1000044, Msg: "暂无此部门的人员修改权限"}
 	NotDelTeamUserError  = &types.Response{Code: 1000045, Msg: "暂无此部门的人员删除权限"}
 	TeamParentIdError    = &types.Response{Code: 1000046, Msg: "父部门不能为自己"}

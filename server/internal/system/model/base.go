@@ -10,6 +10,10 @@ const (
 	_orm = "system"
 )
 
+func DBName() string {
+	return _orm
+}
+
 // dataMap 数据字典
 var dataMap = map[string]string{
 	"phone":   "手机号码",

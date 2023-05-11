@@ -18,45 +18,45 @@ import (
 	"github.com/limeschool/easy-admin/server/core/redis"
 )
 
-type options func(*global)
+type option func(*global)
 
-func WithLogger(log logger.Logger) options {
+func withLogger(log logger.Logger) option {
 	return func(g2 *global) {
 		g2.logger = log
 	}
 }
 
-func WithOrm(orm orm.Orm) options {
+func withOrm(orm orm.Orm) option {
 	return func(g2 *global) {
 		g2.orm = orm
 	}
 }
 
-func WithRedis(redis redis.Redis) options {
+func withRedis(redis redis.Redis) option {
 	return func(g2 *global) {
 		g2.redis = redis
 	}
 }
 
-func WithEnforcer(enforcer enforcer.Enforcer) options {
+func withEnforcer(enforcer enforcer.Enforcer) option {
 	return func(g2 *global) {
 		g2.enforcer = enforcer
 	}
 }
 
-func WithCert(cert cert.Cert) options {
+func withCert(cert cert.Cert) option {
 	return func(g2 *global) {
 		g2.cert = cert
 	}
 }
 
-func WithEmail(email email.Email) options {
+func withEmail(email email.Email) option {
 	return func(g2 *global) {
 		g2.email = email
 	}
 }
 
-func WithCaptcha(captcha captcha.Captcha) options {
+func withCaptcha(captcha captcha.Captcha) option {
 	return func(g2 *global) {
 		g2.captcha = captcha
 	}

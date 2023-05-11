@@ -1,114 +1,144 @@
 <template>
   <a-spin style="display: block" :loading="loading">
-    <a-tabs v-model:activeKey="messageType" type="rounded" destroy-on-hide>
+    <a-tabs
+      v-model:activeKey="type"
+      class="tabs-start"
+      type="capsule"
+      :justify="true"
+      destroy-on-hide
+      @change="fetchData()"
+    >
       <a-tab-pane v-for="item in tabList" :key="item.key">
         <template #title>
-          <span> {{ item.title }}{{ formatUnreadLength(item.key) }} </span>
+          <span> {{ item.title }}</span>
         </template>
-        <a-result v-if="!renderList.length" status="404">
-          <template #subtitle> {{ $t('messageBox.noContent') }} </template>
+        <a-result v-if="!list.length" status="404">
+          <template #subtitle> 暂无消息</template>
         </a-result>
-        <List
-          :render-list="renderList"
-          :unread-count="unreadCount"
-          @item-click="handleItemClick"
-        />
+        <div v-for="(ite, index) in list" :key="index" class="message">
+          <div class="title" @click="handlePreview(ite)">{{ ite.title }}</div>
+          <a-space>
+            <template v-for="(it, ind) in $noticeList" :key="ind">
+              <a-tag
+                v-if="it.key === ite.type"
+                size="small"
+                class="tag"
+                :color="it.color"
+              >
+                {{ it.name }}
+              </a-tag>
+            </template>
+            <span class="operator">{{ ite.operator }}</span>
+            <span class="time">{{ $formatTime(ite.created_at) }}</span>
+          </a-space>
+        </div>
       </a-tab-pane>
-      <template #extra>
-        <a-button type="text" @click="emptyList">
-          {{ $t('messageBox.tab.button') }}
-        </a-button>
-      </template>
+      <!-- <template #extra>
+        <a-button
+          style="margin-right: 10px"
+          type="primary"
+          @click="handleAddNotice"
+          >发送通知</a-button
+        >
+      </template> -->
     </a-tabs>
   </a-spin>
+  <a-drawer
+    v-model:visible="perviewVisible"
+    title="查看通知"
+    width="600px"
+    :hide-cancel="true"
+    ok-text="关闭"
+    @cancel="perviewVisible = false"
+    @before-ok="perviewVisible = false"
+  >
+    <MessageInfo v-if="perviewId != 0" :id="perviewId"></MessageInfo>
+  </a-drawer>
 </template>
 
 <script lang="ts" setup>
-  import { ref, reactive, toRefs, computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import {
-    queryMessageList,
-    setMessageStatus,
-    MessageRecord,
-    MessageListType,
-  } from '@/api/message';
+  import { ref } from 'vue';
   import useLoading from '@/hooks/loading';
-  import List from './list.vue';
+  import { getNotices } from '@/api/system/notice';
+  import MessageInfo from '@/components/message-info/index.vue';
 
   interface TabItem {
     key: string;
     title: string;
-    avatar?: string;
   }
   const { loading, setLoading } = useLoading(true);
-  const messageType = ref('message');
-  const { t } = useI18n();
-  const messageData = reactive<{
-    renderList: MessageRecord[];
-    messageList: MessageRecord[];
-  }>({
-    renderList: [],
-    messageList: [],
-  });
-  toRefs(messageData);
+  const type = ref('unread');
+  const perviewVisible = ref<boolean>(false);
+  const perviewId = ref<number>(0);
+
   const tabList: TabItem[] = [
     {
-      key: 'message',
-      title: t('messageBox.tab.title.message'),
+      key: 'unread',
+      title: '未读消息',
     },
     {
-      key: 'notice',
-      title: t('messageBox.tab.title.notice'),
-    },
-    {
-      key: 'todo',
-      title: t('messageBox.tab.title.todo'),
+      key: 'read',
+      title: '已读消息',
     },
   ];
-  async function fetchSourceData() {
+
+  const list = ref<any>([]);
+
+  const query = ref({
+    page: 1,
+    page_size: 10,
+    is_read: false,
+    status: true,
+  });
+
+  async function fetchData() {
     setLoading(true);
+    if (query.value.is_read !== (type.value === 'unread')) {
+      query.value.page = 1;
+      query.value.page_size = 10;
+    }
+    query.value.is_read = type.value !== 'unread';
     try {
-      const { data } = await queryMessageList();
-      messageData.messageList = data;
-    } catch (err) {
-      // you can report use errorHandler or other
+      const { data } = await getNotices(query.value);
+      list.value = data;
     } finally {
       setLoading(false);
     }
   }
-  async function readMessage(data: MessageListType) {
-    const ids = data.map((item) => item.id);
-    await setMessageStatus({ ids });
-    fetchSourceData();
-  }
-  const renderList = computed(() => {
-    return messageData.messageList.filter(
-      (item) => messageType.value === item.type
-    );
-  });
-  const unreadCount = computed(() => {
-    return renderList.value.filter((item) => !item.status).length;
-  });
-  const getUnreadList = (type: string) => {
-    const list = messageData.messageList.filter(
-      (item) => item.type === type && !item.status
-    );
-    return list;
+
+  fetchData();
+
+  const handlePreview = (data: any) => {
+    perviewId.value = data.id;
+    perviewVisible.value = true;
   };
-  const formatUnreadLength = (type: string) => {
-    const list = getUnreadList(type);
-    return list.length ? `(${list.length})` : ``;
-  };
-  const handleItemClick = (items: MessageListType) => {
-    if (renderList.value.length) readMessage([...items]);
-  };
-  const emptyList = () => {
-    messageData.messageList = [];
-  };
-  fetchSourceData();
 </script>
 
 <style scoped lang="less">
+  .message {
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    .title {
+      display: block;
+      cursor: pointer;
+      color: #000;
+      font-weight: 700;
+      &:hover {
+        color: rgb(var(--blue-6));
+      }
+    }
+
+    .time,
+    .operator {
+      font-size: 13px;
+    }
+  }
+
+  .tabs-start {
+    .arco-tabs-nav-type-capsule {
+      justify-content: flex-start !important;
+    }
+  }
   :deep(.arco-popover-popup-content) {
     padding: 0;
   }

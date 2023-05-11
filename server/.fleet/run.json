@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "debug",
+            "type": "go",
+            "goExecPath": "$USER_HOME$/go/go1.19.2/bin/go",
+            "buildParams": ["github.com/limeschool/easy-admin/server"],
+            "runParams": ["-c","config.yaml"],
+        },
+        
+    ]
+}

@@ -13,25 +13,25 @@ import (
 
 type User struct {
 	types.BaseModel
-	TeamID      int64   `json:"team_id"`
-	RoleID      int64   `json:"role_id"`
-	Name        string  `json:"name"`
-	Nickname    string  `json:"nickname"`
-	Sex         *bool   `json:"sex,omitempty"`
-	Phone       string  `json:"phone"`
-	Password    string  `json:"password,omitempty"  gorm:"->:false;<-:create,update"`
-	Avatar      string  `json:"avatar"`
-	Email       string  `json:"email,omitempty"`
-	Status      *bool   `json:"status,omitempty"`
-	DisableDesc *string `json:"disable_desc"`
-	LastLogin   int64   `json:"last_login"`
-	Operator    string  `json:"operator"`
-	OperatorID  int64   `json:"operator_id"`
+	TeamID      int64   `json:"team_id" gorm:"not null;size:32;comment:部门id"`
+	RoleID      int64   `json:"role_id" gorm:"not null;size:32;comment:角色id"`
+	Name        string  `json:"name" gorm:"not null;size:32;comment:用户姓名"`
+	Nickname    string  `json:"nickname" gorm:"not null;size:128;comment:用户昵称"`
+	Sex         *bool   `json:"sex,omitempty" gorm:"not null;comment:用户性别"`
+	Phone       string  `json:"phone" gorm:"not null;size:32;comment:用户电话"`
+	Password    string  `json:"password,omitempty" gorm:"not null;->:false;<-:create,update;comment:用户密码"`
+	Avatar      string  `json:"avatar" gorm:"not null;size:128;comment:用户头像"`
+	Email       string  `json:"email,omitempty" gorm:"not null;type:varbinary(128);comment:用户邮箱"`
+	Status      *bool   `json:"status,omitempty" gorm:"not null;comment:用户状态"`
+	DisableDesc *string `json:"disable_desc" gorm:"not null;size:128;comment:禁用原因"`
+	LastLogin   int64   `json:"last_login" gorm:"comment:最后登陆时间"`
+	Operator    string  `json:"operator" gorm:"not null;size:128;comment:操作人员名称"`
+	OperatorID  int64   `json:"operator_id" gorm:"not null;size:32;comment:操作人员id"`
 	Role        Role    `json:"role" gorm:"->"`
 	Team        Team    `json:"team" gorm:"->"`
 }
 
-func (u User) TableName() string {
+func (u *User) TableName() string {
 	return "tb_system_user"
 }
 

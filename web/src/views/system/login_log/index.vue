@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <Breadcrumb />
-    <a-card class="general-card" title="登陆日志">
+    <a-card class="general-card">
       <a-row>
         <a-col :flex="1">
           <a-form
@@ -45,18 +45,20 @@
                 </a-form-item>
               </a-col>
               <a-col :span="6">
-                <a-button type="primary" @click="search">
-                  <template #icon>
-                    <icon-search />
-                  </template>
-                  搜索
-                </a-button>
-                <a-button class="ml-15" @click="reset">
-                  <template #icon>
-                    <icon-refresh />
-                  </template>
-                  重置
-                </a-button>
+                <a-space>
+                  <a-button type="primary" @click="search">
+                    <template #icon>
+                      <icon-search />
+                    </template>
+                    搜索
+                  </a-button>
+                  <a-button class="ml-15" @click="reset">
+                    <template #icon>
+                      <icon-refresh />
+                    </template>
+                    重置
+                  </a-button>
+                </a-space>
               </a-col>
             </a-row>
           </a-form>
@@ -129,30 +131,41 @@
           </a-tooltip>
         </a-col>
       </a-row>
-      <a-table
-        v-permission="'system:login:log:query'"
-        row-key="id"
-        :loading="loading"
-        :pagination="pagination"
-        :columns="(cloneColumns as TableColumnData[])"
-        :data="renderData"
-        :bordered="false"
-        :size="size"
-        @page-change="onPageChange"
-      >
-        <template #index="{ rowIndex }">
-          {{ rowIndex + 1 + (pagination.current - 1) * pagination.pageSize }}
-        </template>
+      <a-space direction="vertical" fill>
+        <a-table
+          v-permission="'system:login:log:query'"
+          row-key="id"
+          :loading="loading"
+          :pagination="false"
+          :columns="(cloneColumns as TableColumnData[])"
+          :data="renderData"
+          :bordered="false"
+          :size="size"
+        >
+          <template #index="{ rowIndex }">
+            {{ rowIndex + 1 + (pagination.current - 1) * pagination.pageSize }}
+          </template>
 
-        <template #status="{ record }">
-          <a-tag v-if="record.status" color="green">登陆成功</a-tag>
-          <a-tag v-else color="red">登陆失败</a-tag>
-        </template>
+          <template #status="{ record }">
+            <a-tag v-if="record.status" color="green">登陆成功</a-tag>
+            <a-tag v-else color="red">登陆失败</a-tag>
+          </template>
 
-        <template #createdAt="{ record }">
-          {{ $formatTime(record.created_at) }}
-        </template>
-      </a-table>
+          <template #createdAt="{ record }">
+            {{ $formatTime(record.created_at) }}
+          </template>
+        </a-table>
+        <a-pagination
+          :total="pagination.total"
+          :current="pagination.current"
+          :page-size="pagination.pageSize"
+          show-total
+          show-jumper
+          show-page-size
+          @change="onPageChange"
+          @page-size-change="onPageSizeChange"
+        />
+      </a-space>
     </a-card>
   </div>
 </template>
@@ -170,7 +183,7 @@
 
   const newSearchForm = () => {
     return {
-      phone: '',
+      phone: undefined,
       time: [],
       status: '',
     };
@@ -231,19 +244,34 @@
     },
   ]);
 
-  const fetchData = async (params?: any) => {
+  const fetchData = async () => {
     setLoading(true);
-    try {
-      if (!params) {
-        params = {};
-      }
-      params = {
-        ...params,
-        page: pagination.current,
-        page_size: pagination.pageSize,
-      };
 
-      const { data, total } = await getLoginLog(params);
+    try {
+      // 组装请求参数
+      const req: any = { ...searchForm.value };
+      req.page = pagination.current;
+      req.page_size = pagination.pageSize;
+
+      req.status = undefined;
+      if (searchForm.value.status) {
+        req.status = searchForm.value.status === 'true';
+      }
+      if (searchForm.value.time && searchForm.value.time.length === 1) {
+        req.start = Math.floor(
+          new Date(searchForm.value.time[0]).getTime() / 1000
+        );
+      }
+      if (searchForm.value.time && searchForm.value.time.length === 2) {
+        req.start = Math.floor(
+          new Date(searchForm.value.time[0]).getTime() / 1000
+        );
+        req.end = Math.floor(
+          new Date(searchForm.value.time[1]).getTime() / 1000
+        );
+      }
+
+      const { data, total } = await getLoginLog(req);
       renderData.value = data;
       pagination.total = total;
     } finally {
@@ -254,33 +282,18 @@
   fetchData();
 
   const search = () => {
-    const data: any = {};
-    if (searchForm.value.phone) {
-      data.phone = searchForm.value.phone;
-    }
-
-    data.status = undefined;
-    if (searchForm.value.status) {
-      data.status = searchForm.value.status === 'true';
-    }
-
-    if (searchForm.value.time && searchForm.value.time.length === 1) {
-      data.start = Math.floor(
-        new Date(searchForm.value.time[0]).getTime() / 1000
-      );
-    }
-    if (searchForm.value.time && searchForm.value.time.length === 2) {
-      data.start = Math.floor(
-        new Date(searchForm.value.time[0]).getTime() / 1000
-      );
-      data.end = Math.floor(
-        new Date(searchForm.value.time[1]).getTime() / 1000
-      );
-    }
-    fetchData(data);
+    pagination.current = 1;
+    pagination.pageSize = 10;
+    fetchData();
   };
+
   const onPageChange = (current: number) => {
     pagination.current = current;
+    fetchData();
+  };
+
+  const onPageSizeChange = (size: number) => {
+    pagination.pageSize = size;
     fetchData();
   };
 

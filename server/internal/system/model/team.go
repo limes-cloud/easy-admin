@@ -9,11 +9,11 @@ import (
 
 type Team struct {
 	types.BaseModel
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	ParentID    int64   `json:"parent_id"`
-	Operator    string  `json:"operator"`
-	OperatorID  int64   `json:"operator_id"`
+	Name        string  `json:"name" gorm:"not null;size:128;comment:部门名称"`
+	Description string  `json:"description,omitempty" gorm:"size:256;comment:部门备注"`
+	ParentID    int64   `json:"parent_id" gorm:"not null;size:32;comment:父级部门"`
+	Operator    string  `json:"operator" gorm:"not null;size:128;comment:操作人员名称"`
+	OperatorID  int64   `json:"operator_id" gorm:"not null;size:32;comment:操作人员id"`
 	Children    []*Team `json:"children,omitempty" gorm:"-"`
 }
 

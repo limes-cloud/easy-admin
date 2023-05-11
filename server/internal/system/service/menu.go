@@ -105,7 +105,7 @@ func UpdateMenu(ctx *core.Context, in *types.UpdateMenuRequest) error {
 	}
 
 	// 更新首页菜单
-	if inMenu.IsHome != menu.IsHome && inMenu.IsHome == true {
+	if inMenu.IsHome != menu.IsHome && inMenu.IsHome != nil && *inMenu.IsHome == true {
 		return inMenu.UpdateHome(ctx, inMenu.ID())
 	}
 	return nil

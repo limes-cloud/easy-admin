@@ -4,7 +4,9 @@ import defaultSettings from '@/config/settings.json';
 import { AppState } from './types';
 
 const useAppStore = defineStore('app', {
-  state: (): AppState => ({ ...defaultSettings }),
+  state: (): AppState => {
+    return { ...defaultSettings } as AppState;
+  },
 
   getters: {
     appCurrentSetting(state: AppState): AppState {
@@ -19,6 +21,9 @@ const useAppStore = defineStore('app', {
   },
 
   actions: {
+    setting(state: AppState) {
+      this.$state = state;
+    },
     // Update app settings
     updateSettings(partial: Partial<AppState>) {
       // @ts-ignore-next-line

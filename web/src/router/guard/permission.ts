@@ -10,6 +10,7 @@ import { WHITE_LIST } from '../constants';
 export default function setupPermissionGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     const appStore = useAppStore();
+    console.log('init menu 0');
     // const userStore = useUserStore();
     if (appStore.menuFromServer) {
       // 判读是否存在菜单
@@ -28,7 +29,7 @@ export default function setupPermissionGuard(router: Router) {
         router.addRoute(NOT_FOUND_ROUTE);
 
         appStore.setServerMenu(info);
-        appStore.stopLoading();
+        console.log('init menu 1');
         // 路由跳转
         if (to.path === '/') {
           if (info.homePath) {
@@ -46,5 +47,6 @@ export default function setupPermissionGuard(router: Router) {
       next();
     }
     NProgress.done();
+    appStore.stopLoading();
   });
 }

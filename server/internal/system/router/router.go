@@ -8,6 +8,10 @@ import (
 func Init(engine *gin.RouterGroup) {
 	api := engine.Group("/system")
 	{
+		// 获取系统信息
+		api.GET("/config", handler.Config)
+
+		// 获取验证码
 		api.POST("/captcha", handler.Captcha)
 
 		//文件上传相关

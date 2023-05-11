@@ -2,7 +2,7 @@
   <div class="navbar">
     <div class="left-side">
       <a-space>
-        <img alt="logo" :src="logo" style="width: 40px" />
+        <img alt="logo" :src="$logo ? $logo : logo" style="width: 40px" />
         <a-typography-title
           :style="{ margin: 0, fontSize: '18px' }"
           :heading="5"
@@ -44,7 +44,7 @@
       <li>
         <a-tooltip :content="$t('settings.navbar.alerts')">
           <div class="message-box-trigger">
-            <a-badge :count="9" dot>
+            <a-badge :count="unreadCount">
               <a-button
                 class="nav-btn"
                 type="outline"
@@ -89,18 +89,32 @@
           </a-button>
         </a-tooltip>
       </li>
+      <!-- <li>
+        <a-tooltip :content="$t('settings.title')">
+          <a-button
+            class="nav-btn"
+            type="outline"
+            :shape="'circle'"
+            @click="setVisible"
+          >
+            <template #icon>
+              <icon-settings />
+            </template>
+          </a-button>
+        </a-tooltip>
+      </li> -->
       <li>
         <a-dropdown trigger="click">
           <a-avatar
             :size="32"
             :style="{ marginRight: '8px', cursor: 'pointer' }"
           >
-            <img v-if="!avatar" alt="avatar" :src="logo" />
+            <img v-if="!avatar" alt="avatar" :src="$logo ? $logo : logo" />
             <img v-else alt="avatar" :src="$staticUrl + avatar" />
           </a-avatar>
           <template #content>
             <a-doption>
-              <a-space @click="$router.push({ name: 'Userinfo' })">
+              <a-space @click="showUserinfo = true">
                 <icon-user />
                 <span>
                   {{ $t('menu.user') }}
@@ -119,6 +133,7 @@
         </a-dropdown>
       </li>
     </ul>
+    <Userinfo :show="showUserinfo" @cancel="showUserinfo = false"></Userinfo>
   </div>
 </template>
 
@@ -129,8 +144,12 @@
   import useUser from '@/hooks/user';
   import Menu from '@/components/menu/index.vue';
   import logo from '@/assets/logo.png';
+  import { getUnreadNoticeNum } from '@/api/system/notice';
   import MessageBox from '../message-box/index.vue';
+  import Userinfo from '../userinfo/index.vue';
 
+  const showUserinfo = ref(false);
+  const unreadCount = ref(0);
   const appStore = useAppStore();
   const userStore = useUserStore();
   const { logout } = useUser();
@@ -158,6 +177,10 @@
     toggleTheme();
   };
 
+  const setVisible = () => {
+    appStore.updateSettings({ globalSettings: true });
+  };
+
   const refBtn = ref();
   const setPopoverVisible = () => {
     const event = new MouseEvent('click', {
@@ -170,6 +193,13 @@
   const handleLogout = () => {
     logout();
   };
+
+  const fetchUnreadNotice = async () => {
+    const { data } = await getUnreadNoticeNum();
+    unreadCount.value = data;
+  };
+
+  fetchUnreadNotice();
 
   const toggleDrawerMenu = inject('toggleDrawerMenu') as () => void;
 </script>

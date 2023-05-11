@@ -15,7 +15,7 @@ type tencent struct {
 	client *cos.Client
 }
 
-func NewTencent(conf config.File) (Store, error) {
+func NewTencent(conf *config.File) (Store, error) {
 	if conf.Endpoint == "" || conf.SecretID == "" || conf.SecretKey == "" {
 		return nil, errors.New("upload config error")
 	}

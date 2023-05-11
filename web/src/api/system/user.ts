@@ -7,6 +7,7 @@ export function login(data: any) {
       password: data.password,
       time: new Date().getTime(),
     }),
+
     phone: data.username,
     captcha: data.captcha,
     captcha_id: data.captcha_id,
@@ -14,8 +15,8 @@ export function login(data: any) {
   return axios.post('/api/system/user/login', info);
 }
 
-export function captcha() {
-  return axios.post('/api/system/captcha');
+export function captcha(data: any) {
+  return axios.post('/api/system/captcha', data);
 }
 
 export function logout() {
@@ -55,14 +56,14 @@ export function updateUserInfo(data: any) {
   return axios.put('/api/system/user/info', data);
 }
 
-// 修改用户密码
-export function updateUserPassword(data: any) {
-  return axios.put('/api/system/user/password', data);
+// 修改用户认证信息
+export function updateUserByVerify(data: any) {
+  return axios.put('/api/system/user/verify', data);
 }
 
 // 获取邮箱验证码
-export function getEmailCaptcha() {
-  return axios.post('/api/system/email/captcha');
+export function sendEmailCaptcha(data: any) {
+  return axios.post('/api/system/email/captcha', data);
 }
 
 export default null;

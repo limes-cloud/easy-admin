@@ -4,6 +4,12 @@ service:
   debug: true  #是否开启debug
   errorCode: 400 #默认失败的code
   successCode: 200 #默认成功的code
+  title: easy-admin 后台管理系统 #系统名称
+  desc: 开放协作，拥抱未来，插件化编程实现 #系统描述
+  copyright: Copyright © 2023 lime.qlime.cn. All rights reserved. #版权信息
+  staticUrl: http://localhost:8080  #静态资源url
+  logo: http://p3-armor.byteimg.com/tos-cn-i-49unhts6dw/dfdba5317c0c20ce20e64fac803d52bc.svg~tplv-49unhts6dw-image.image #系统logo
+  topMenu: false
 # 日志相关配置
 log:
   header: trace-id # 当请求头存在trace-id时，优先使用
@@ -43,9 +49,6 @@ enforcer:
   enable: true #是否开启enforcer权限校验
   db: system #选择enforcer的数据库
   cache: cache #选择缓存的redis名
-  whitelist:  #跳过鉴权的白名单
-#    post:/api/system/user/login: true
-#    post:/api/system/captcha: true
 # jwt 身份验证
 jwt:
   enable: true #是否开启jwt
@@ -55,11 +58,12 @@ jwt:
   expire: 30s #过期时间
   renewal: 2h #续期时间
   unique: true #是否唯一设备登陆
-  whitelist: #忽略token过期的白名单
+  whitelist: #忽略token校验以及鉴权的白名单
     post:/api/system/token/refresh: true
-    post:/api/system/user/logout: true
     post:/api/system/captcha: true
     post:/api/system/user/login: true
+    get:/api/system/config: true
+    post:/api/system/user/logout: true
 #证书相关配置 可以初始化加载证书，实现快速使用
 cert:
   - name: decodePassword  #证书名
@@ -69,7 +73,7 @@ cert:
 # 邮件发送相关配置
 email:
   template: #邮件模板
-    - name: #邮件模板key
+    - name: captcha #邮件模板key
       subject: 验证码发送通知 #邮件模板主题
       src: template/email/default.html #邮件模板路径
   company: 青柠校园 #发送单位名称
@@ -104,6 +108,17 @@ file:
         - jpg
         - png
         - jpeg
+      rename: true #是否需要重命名，后端会生成唯一的文件名返回
+    file: #允许上传的子目录
+      maxSize: 500 #允许上传的文件最大大小
+      accepts: #允许上传的类型
+        - jpg
+        - png
+        - jpeg
+        - mp3
+        - mp4
+        - xls
+        - xlsx
       rename: true #是否需要重命名，后端会生成唯一的文件名返回
 middleware: #中间件相关配置
   pprof: #pprof分析工具

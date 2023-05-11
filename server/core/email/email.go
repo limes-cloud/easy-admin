@@ -5,13 +5,15 @@ import (
 	"github.com/limeschool/easy-admin/server/config"
 	"github.com/limeschool/easy-admin/server/errors"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"net/smtp"
 	"os"
 	"strings"
+	"sync"
 )
 
 type email struct {
+	mu       sync.RWMutex
 	template map[string]struct {
 		subject string
 		html    string
@@ -37,8 +39,9 @@ type Sender interface {
 }
 
 // New 初始化email实例
-func New(conf config.Email) Email {
+func New(conf *config.Email) Email {
 	emailIns := email{
+		mu:       sync.RWMutex{},
 		user:     conf.User,
 		host:     conf.Host,
 		password: conf.Password,
@@ -49,12 +52,15 @@ func New(conf config.Email) Email {
 		}{},
 	}
 
+	emailIns.mu.Lock()
+	defer emailIns.mu.Unlock()
+
 	for _, item := range conf.Template {
 		file, err := os.Open(item.Src)
 		if err != nil {
 			panic("邮箱模板初始化失败:" + err.Error())
 		}
-		val, err := ioutil.ReadAll(file)
+		val, err := io.ReadAll(file)
 		if err != nil {
 			panic("读取邮箱模板失败:" + err.Error())
 		}
@@ -88,18 +94,20 @@ func (e *email) NewSender(tpName string) Sender {
 //	@param data 模板参数
 //	@return error
 func (e *sender) Send(email string, data any) error {
-	if !e.hasTemplate() {
+	subject, htmlTemplate, has := e.getTemplate()
+	if !has {
 		return errors.New("not exist template")
 	}
-	html, err := e.parseTemplate(data)
+
+	html, err := e.parseTemplate(htmlTemplate, data)
 	if err != nil {
 		return err
 	}
 	hp := strings.Split(e.host, ":")
 	auth := smtp.PlainAuth("", e.user, e.password, hp[0])
 	ct := "Content-Type: text/html; charset=UTF-8"
-	subject := e.email.template[e.tp].subject
-	msg := []byte("To: " + email + "\r\nFrom: " + e.company + "\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + html)
+	msg := []byte("To: " + email + "\r\nFrom: " + e.user + "\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + html)
+
 	return smtp.SendMail(e.host, auth, e.user, []string{email}, msg)
 }
 
@@ -111,10 +119,12 @@ func (e *sender) Send(email string, data any) error {
 //	@param data  模板填充变量
 //	@return error
 func (e *sender) SendAll(emails []string, data any) error {
-	if !e.hasTemplate() {
+	subject, htmlTemplate, has := e.getTemplate()
+	if !has {
 		return errors.New("not exist template")
 	}
-	html, err := e.parseTemplate(data)
+
+	html, err := e.parseTemplate(htmlTemplate, data)
 	if err != nil {
 		return err
 	}
@@ -122,19 +132,20 @@ func (e *sender) SendAll(emails []string, data any) error {
 	auth := smtp.PlainAuth("", e.user, e.password, hp[0])
 	ct := "Content-Type: text/html; charset=UTF-8"
 	to := strings.Join(emails, ";")
-	subject := e.email.template[e.tp].subject
 	msg := []byte("To: " + to + "\r\nFrom: " + e.company + ">\r\nSubject: " + subject + "\r\n" + ct + "\r\n\r\n" + html)
 	return smtp.SendMail(e.host, auth, e.user, emails, msg)
 }
 
-// hasTemplate
+// getTemplate
 //
-//	@Description: 判断是否存在模板
+//	@Description: 获取指定模板
 //	@receiver e
 //	@return bool
-func (e *sender) hasTemplate() bool {
-	_, is := e.email.template[e.tp]
-	return is
+func (e *sender) getTemplate() (string, string, bool) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	tp, is := e.email.template[e.tp]
+	return tp.subject, tp.html, is
 }
 
 // parseTemplate
@@ -143,10 +154,9 @@ func (e *sender) hasTemplate() bool {
 //	@receiver e
 //	@param data
 //	@return string
-func (e *sender) parseTemplate(data any) (string, error) {
+func (e *sender) parseTemplate(tp string, data any) (string, error) {
 	n := template.New("")
-	htmlTemplate := e.email.template[e.tp].html
-	t, err := n.Parse(htmlTemplate)
+	t, err := n.Parse(tp)
 	if err != nil {
 		return "", err
 	}

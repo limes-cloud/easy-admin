@@ -14,7 +14,7 @@ func UploadFile(ctx *core.Context, in *types.UploadRequest) (any, error) {
 	file, err := ctx.File(in.Dir)
 	if err != nil {
 		ctx.Logger().Error("文件上传失败", zap.Error(err))
-		return nil, errors.InitUploadError
+		return nil, errors.UploadDirError
 	}
 
 	form, err := ctx.MultipartForm()

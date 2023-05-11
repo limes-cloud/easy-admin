@@ -17,19 +17,19 @@ type AllOptions struct {
 }
 
 type CreateModel struct {
-	ID        int64 `json:"id" gorm:"primary_key"`
-	CreatedAt int64 `json:"created_at,omitempty" gorm:"index"`
+	ID        int64 `json:"id" gorm:"primary_key;autoIncrement;size:32;comment:主键ID"`
+	CreatedAt int64 `json:"created_at,omitempty" gorm:"index;comment:创建时间"`
 }
 
 type BaseModel struct {
-	ID        int64 `json:"id" gorm:"primary_key"`
-	CreatedAt int64 `json:"created_at,omitempty" gorm:"index"`
-	UpdatedAt int64 `json:"updated_at,omitempty" gorm:"index"`
+	ID        int64 `json:"id" gorm:"primary_key;autoIncrement;size:32;comment:主键ID"`
+	CreatedAt int64 `json:"created_at,omitempty" gorm:"index;comment:创建时间"`
+	UpdatedAt int64 `json:"updated_at,omitempty" gorm:"index;comment:修改时间"`
 }
 
 type DeleteModel struct {
-	ID        int64          `json:"id" gorm:"primary_key"`
-	CreatedAt int64          `json:"created_at,omitempty" gorm:"index"`
-	UpdatedAt int64          `json:"updated_at,omitempty" gorm:"index"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	ID        int64          `json:"id" gorm:"primary_key;autoIncrement;size:32;comment:主键ID"`
+	CreatedAt int64          `json:"created_at,omitempty" gorm:"index;comment:创建时间"`
+	UpdatedAt int64          `json:"updated_at,omitempty" gorm:"index;comment:修改时间"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"column:deleted_at;index;comment:删除时间"`
 }

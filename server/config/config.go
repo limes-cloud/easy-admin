@@ -13,17 +13,17 @@ import (
 type Config struct {
 	v          *viper.Viper
 	isRemote   bool
-	Service    Service
-	Log        Log
+	Service    *Service
+	Log        *Log
 	Orm        []Orm
-	Middleware Middleware
+	Middleware *Middleware
 	Redis      []Redis
-	Enforcer   Enforcer
-	JWT        JWT
+	Enforcer   *Enforcer
+	JWT        *JWT
 	Cert       []Cert
-	Email      Email
-	File       File
-	Http       Http
+	Email      *Email
+	File       *File
+	Http       *Http
 	Captcha    []Captcha
 }
 
@@ -67,7 +67,7 @@ func New() *Config {
 		}
 
 		if err := vp.AddRemoteProvider(drive, addr, path); err != nil {
-			panic("配置仓库连接失败：" + err.Error())
+			panic("配置连接失败：" + err.Error())
 		}
 
 		vp.SetConfigType(tp)
@@ -89,7 +89,6 @@ func New() *Config {
 // Watch 配置变更监听
 func (c *Config) Watch(f func(c *Config)) {
 	c.v.OnConfigChange(func(in fsnotify.Event) {
-		fmt.Printf("on change")
 		if err := c.v.Unmarshal(&c); err != nil {
 			fmt.Printf("配置变更失败：%v", err.Error())
 		} else {
@@ -100,10 +99,9 @@ func (c *Config) Watch(f func(c *Config)) {
 	if c.isRemote {
 		go func() {
 			for {
-				//delay after each request
 				time.Sleep(time.Second * 5)
 				if err := viper.WatchRemoteConfig(); err != nil {
-					_ = fmt.Errorf("unable to read remote config: %v", err)
+					fmt.Printf("unable to read remote config: %v", err)
 					continue
 				}
 			}

@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <Breadcrumb />
-    <a-card class="general-card" title="用户管理">
+    <a-card class="general-card">
       <a-row>
         <a-col :flex="1">
           <a-form
@@ -183,91 +183,106 @@
           </a-tooltip>
         </a-col>
       </a-row>
-      <a-table
-        v-permission="'system:user:query'"
-        row-key="id"
-        :loading="loading"
-        :pagination="pagination"
-        :columns="(cloneColumns as TableColumnData[])"
-        :data="renderData"
-        :bordered="false"
-        :size="size"
-        :scroll="{
-          x: 2000,
-          y: 200,
-        }"
-        @page-change="onPageChange"
-      >
-        <template #index="{ rowIndex }">
-          {{ rowIndex + 1 + (pagination.current - 1) * pagination.pageSize }}
-        </template>
+      <a-space direction="vertical" fill>
+        <a-table
+          v-permission="'system:user:query'"
+          row-key="id"
+          :loading="loading"
+          :pagination="false"
+          :columns="(cloneColumns as TableColumnData[])"
+          :data="renderData"
+          :bordered="false"
+          :size="size"
+          :scroll="{
+            x: 2000,
+            y: 200,
+          }"
+        >
+          <template #index="{ rowIndex }">
+            {{ rowIndex + 1 + (pagination.current - 1) * pagination.pageSize }}
+          </template>
 
-        <template #role="{ record }">
-          {{ record.role.name }}
-        </template>
+          <template #role="{ record }">
+            {{ record.role.name }}
+          </template>
 
-        <template #team="{ record }">
-          {{ record.team.name }}
-        </template>
+          <template #team="{ record }">
+            {{ record.team.name }}
+          </template>
 
-        <template #avatar="{ record }">
-          <a-avatar>
-            <img v-if="record.avatar == ''" alt="avatar" :src="logo" />
-            <img alt="avatar" :src="$staticUrl + record.avatar" />
-          </a-avatar>
-        </template>
+          <template #avatar="{ record }">
+            <a-avatar>
+              <img
+                v-if="record.avatar == ''"
+                alt="avatar"
+                :src="$logo ? $logo : logo"
+              />
+              <img alt="avatar" :src="$staticUrl + record.avatar" />
+            </a-avatar>
+          </template>
 
-        <template #sex="{ record }">
-          <a-tag v-if="record.sex" color="arcoblue">
-            <template #icon><icon-man /></template>男
-          </a-tag>
-          <a-tag v-if="!record.sex" color="red">
-            <template #icon><icon-woman /></template>女
-          </a-tag>
-        </template>
-
-        <template #status="{ record }">
-          <a-switch
-            v-model="record.status"
-            type="round"
-            @change="handleChangeStatus(record)"
-          >
-            <template #checked> 启用 </template>
-            <template #unchecked> 禁用 </template>
-          </a-switch>
-        </template>
-
-        <template #lastLogin="{ record }">
-          {{ $formatTime(record.last_login) }}
-        </template>
-        <template #createdAt="{ record }">
-          {{ $formatTime(record.created_at) }}
-        </template>
-        <template #updatedAt="{ record }">
-          {{ $formatTime(record.updated_at) }}
-        </template>
-
-        <template #operations="{ record }">
-          <a-space class="cursor-pointer">
-            <a-tag
-              v-permission="'system:user:update'"
-              color="arcoblue"
-              @click="handleUpdate(record)"
-            >
-              <template #icon><icon-edit /></template>修改
+          <template #sex="{ record }">
+            <a-tag v-if="record.sex" color="arcoblue">
+              <template #icon><icon-man /></template>男
             </a-tag>
-            <a-popconfirm
-              content="您确认要删除此用户么？"
-              type="warning"
-              @ok="handleDelete(record.id)"
+            <a-tag v-if="!record.sex" color="red">
+              <template #icon><icon-woman /></template>女
+            </a-tag>
+          </template>
+
+          <template #status="{ record }">
+            <a-switch
+              v-model="record.status"
+              type="round"
+              @change="handleChangeStatus(record)"
             >
-              <a-tag v-permission="'system:user:delete'" color="red">
-                <template #icon><icon-delete /></template>删除
+              <template #checked> 启用 </template>
+              <template #unchecked> 禁用 </template>
+            </a-switch>
+          </template>
+
+          <template #lastLogin="{ record }">
+            {{ $formatTime(record.last_login) }}
+          </template>
+          <template #createdAt="{ record }">
+            {{ $formatTime(record.created_at) }}
+          </template>
+          <template #updatedAt="{ record }">
+            {{ $formatTime(record.updated_at) }}
+          </template>
+
+          <template #operations="{ record }">
+            <a-space class="cursor-pointer">
+              <a-tag
+                v-permission="'system:user:update'"
+                color="arcoblue"
+                @click="handleUpdate(record)"
+              >
+                <template #icon><icon-edit /></template>修改
               </a-tag>
-            </a-popconfirm>
-          </a-space>
-        </template>
-      </a-table>
+              <a-popconfirm
+                content="您确认要删除此用户么？"
+                type="warning"
+                @ok="handleDelete(record.id)"
+              >
+                <a-tag v-permission="'system:user:delete'" color="red">
+                  <template #icon><icon-delete /></template>删除
+                </a-tag>
+              </a-popconfirm>
+            </a-space>
+          </template>
+        </a-table>
+        <a-pagination
+          :total="pagination.total"
+          :current="pagination.current"
+          :page-size="pagination.pageSize"
+          show-total
+          show-jumper
+          show-page-size
+          @change="onPageChange"
+          @page-size-change="onPageSizeChange"
+        />
+      </a-space>
     </a-card>
 
     <!--修改和新建弹窗表单-->
@@ -489,7 +504,7 @@
   const submitForm = ref<any>({});
   const cloneColumns = ref<Column[]>([]);
   const showColumns = ref<Column[]>([]);
-  const size = ref<SizeProps>('large');
+  const size = ref<SizeProps>('medium');
 
   const pagination = reactive({
     current: 1,
@@ -515,7 +530,7 @@
       title: '序号',
       dataIndex: 'index',
       slotName: 'index',
-      width: 50,
+      width: 70,
     },
     {
       title: '用户角色',
@@ -590,17 +605,34 @@
     },
   ]);
 
-  const fetchData = async (params?: any) => {
+  const fetchData = async () => {
     setLoading(true);
-    try {
-      if (!pagination.current) {
-        pagination.current = 1;
-      }
-      if (!params) params = {};
-      params.page = pagination.current;
-      params.page_size = pagination.pageSize;
 
-      const { data, total } = await getUsers(params);
+    try {
+      const req: any = { ...searchForm.value };
+      req.page = pagination.current;
+      req.page_size = pagination.pageSize;
+
+      req.status = undefined;
+      if (searchForm.value.status) {
+        req.status = searchForm.value.status === 'true';
+      }
+
+      if (searchForm.value.time && searchForm.value.time.length === 1) {
+        req.start = Math.floor(
+          new Date(searchForm.value.time[0]).getTime() / 1000
+        );
+      }
+      if (searchForm.value.time && searchForm.value.time.length === 2) {
+        req.start = Math.floor(
+          new Date(searchForm.value.time[0]).getTime() / 1000
+        );
+        req.end = Math.floor(
+          new Date(searchForm.value.time[1]).getTime() / 1000
+        );
+      }
+
+      const { data, total } = await getUsers(req);
       renderData.value = data;
       pagination.total = total;
     } finally {
@@ -613,32 +645,16 @@
   const search = () => {
     pagination.current = 1;
     pagination.pageSize = 10;
-
-    const data: any = { ...searchForm.value };
-
-    data.status = undefined;
-    if (searchForm.value.status) {
-      data.status = searchForm.value.status === 'true';
-    }
-
-    if (searchForm.value.time && searchForm.value.time.length === 1) {
-      data.start = Math.floor(
-        new Date(searchForm.value.time[0]).getTime() / 1000
-      );
-    }
-    if (searchForm.value.time && searchForm.value.time.length === 2) {
-      data.start = Math.floor(
-        new Date(searchForm.value.time[0]).getTime() / 1000
-      );
-      data.end = Math.floor(
-        new Date(searchForm.value.time[1]).getTime() / 1000
-      );
-    }
-    console.log(data);
-    fetchData(data);
+    fetchData();
   };
 
   const onPageChange = (current: number) => {
+    pagination.current = current;
+    fetchData();
+  };
+
+  const onPageSizeChange = (size: number) => {
+    pagination.pageSize = size;
     fetchData();
   };
 

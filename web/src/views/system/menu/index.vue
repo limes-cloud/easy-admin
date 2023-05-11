@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <Breadcrumb />
-    <a-card class="general-card" title="菜单管理">
+    <a-card class="general-card">
       <a-row style="margin-bottom: 16px; align-items: center">
         <a-col :span="12">
           <a-button
@@ -290,7 +290,7 @@
         </a-form-item>
 
         <a-form-item
-          v-if="submitForm.type === 'A'"
+          v-if="submitForm.type === 'A' || submitForm.type === 'BA'"
           field="method"
           label="请求方法"
           :validate-trigger="['change', 'input']"
@@ -310,7 +310,7 @@
         </a-form-item>
 
         <a-form-item
-          v-if="submitForm.type !== 'M'"
+          v-if="submitForm.type !== 'M' && submitForm.type !== 'BA'"
           field="permission"
           label="权限指令"
           :rules="[
@@ -331,7 +331,11 @@
         <a-form-item
           v-if="submitForm.type !== 'G'"
           field="path"
-          label="菜单路径"
+          :label="
+            submitForm.type === 'A' || submitForm.type === 'BA'
+              ? '接口路径'
+              : '菜单路径'
+          "
           :rules="[
             {
               required: true,
@@ -396,6 +400,18 @@
             <a-radio :value="true">是</a-radio>
           </a-radio-group>
         </a-form-item>
+
+        <a-form-item
+          v-if="submitForm.type === 'M'"
+          field="is_home"
+          label="设为首页"
+          :validate-trigger="['change', 'input']"
+        >
+          <a-radio-group v-model="submitForm.is_home" :default-value="false">
+            <a-radio :value="false">否</a-radio>
+            <a-radio :value="true">是</a-radio>
+          </a-radio-group>
+        </a-form-item>
       </a-form>
     </a-drawer>
   </div>
@@ -441,6 +457,10 @@
     {
       label: '接口组',
       value: 'G',
+    },
+    {
+      label: '基础接口',
+      value: 'BA',
     },
   ]);
 
