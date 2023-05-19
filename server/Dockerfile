@@ -15,5 +15,6 @@ EXPOSE 8081
 WORKDIR /go/build
 COPY ./config-prod.yaml /go/build/config-prod.yaml
 COPY ./template /go/build/template
+COPY ./cert /go/build/cert
 COPY --from=build /go/build/entry /go/build/entry
 CMD ["./entry","-c","./config-prod.yaml"]
