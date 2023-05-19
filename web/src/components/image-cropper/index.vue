@@ -124,6 +124,7 @@
       },
       open() {
         this.$nextTick(() => {
+          // @ts-ignore
           this.$refs.imgCutterRef.handleOpen({
             name: 'file.png',
             src: this.image,
