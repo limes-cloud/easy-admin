@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/glebarez/sqlite"
@@ -12,6 +13,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"gorm.io/plugin/dbresolver"
+	"strings"
 	"sync"
 )
 
@@ -85,6 +87,16 @@ func New(cm []config.Orm, logger logger.Logger) Orm {
 	for _, conf := range cm {
 		if !conf.Enable {
 			continue
+		}
+		database := conf.Dsn[strings.LastIndex(conf.Dsn, "/")+1 : strings.Index(conf.Dsn, "?")]
+		sourceDsn := conf.Dsn[:strings.LastIndex(conf.Dsn, "/")+1] + conf.Dsn[strings.Index(conf.Dsn, "?"):]
+
+		sourceDB, err := sql.Open(conf.Drive, sourceDsn)
+		if err != nil {
+			panic(fmt.Errorf("数据库连接失败:%v", err))
+		}
+		if _, err = sourceDB.Exec("use " + database); err != nil {
+			sourceDB.Exec("create database " + database)
 		}
 
 		// 连接主数据库

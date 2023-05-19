@@ -1,6 +1,7 @@
 package install
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/internal/system/model"
 	"gorm.io/gorm"
@@ -8,7 +9,7 @@ import (
 
 type Model interface {
 	TableName() string
-	InitData(*gorm.DB) error
+	InitData(ctx *core.Context) error
 }
 
 type install struct {
@@ -45,10 +46,11 @@ func Init() {
 
 func (ins *install) Install() error {
 	for _, tb := range ins.ms {
-		if err := ins.db.Migrator().AutoMigrate(tb); err != nil {
+
+		if err := ins.db.Set("gorm:table_options", "ENGINE=InnoDB").Migrator().AutoMigrate(tb); err != nil {
 			return err
 		}
-		if err := tb.InitData(ins.db); err != nil {
+		if err := tb.InitData(core.New(&gin.Context{})); err != nil {
 			return err
 		}
 	}

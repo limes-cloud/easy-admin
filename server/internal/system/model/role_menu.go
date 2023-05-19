@@ -17,7 +17,7 @@ type RoleMenu struct {
 	Menu       Menu   `json:"menu" gorm:"->;constraint:OnDelete:cascade"`
 }
 
-func (RoleMenu) TableName() string {
+func (*RoleMenu) TableName() string {
 	return "tb_system_role_menu"
 }
 
@@ -69,4 +69,8 @@ func (rm *RoleMenu) MenuRoles(ctx *core.Context, menuId int64) ([]*RoleMenu, err
 // DeleteByRoleID 通过角色id删除 角色所属菜单
 func (rm *RoleMenu) DeleteByRoleID(ctx *core.Context, roleId int64) error {
 	return transferErr(database(ctx).Delete(rm, "role_id=?", roleId).Error)
+}
+
+func (rm *RoleMenu) InitData(ctx *core.Context) error {
+	return nil
 }

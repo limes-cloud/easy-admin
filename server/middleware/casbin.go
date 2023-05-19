@@ -29,8 +29,7 @@ func Enforce() gin.HandlerFunc {
 
 		// 基础api放行
 		menu := model.Menu{}
-		baseApis := menu.GetBaseApiPath(ctx)
-		if baseApis[method+":"+path] {
+		if menu.IsBaseApiPath(ctx, method, path) {
 			return
 		}
 

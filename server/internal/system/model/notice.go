@@ -19,7 +19,7 @@ type Notice struct {
 	ReadAt     int64  `json:"read_at" gorm:"-"`
 }
 
-func (u Notice) TableName() string {
+func (u *Notice) TableName() string {
 	return "tb_system_notice"
 }
 
@@ -115,4 +115,8 @@ func (u *Notice) Update(ctx *core.Context) error {
 // DeleteByID 通过id删除通知信息
 func (u *Notice) DeleteByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).Delete(u, id).Error)
+}
+
+func (u *Notice) InitData(ctx *core.Context) error {
+	return nil
 }

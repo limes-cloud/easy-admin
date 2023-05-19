@@ -5,6 +5,7 @@ import (
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools/tree"
 	"github.com/limeschool/easy-admin/server/types"
+	"time"
 )
 
 type Team struct {
@@ -109,4 +110,14 @@ func (t *Team) DeleteByID(ctx *core.Context, id int64) error {
 
 	// 进行数据删除
 	return transferErr(database(ctx).Where("id in ?", ids).Delete(&t).Error)
+}
+
+func (t *Team) InitData(ctx *core.Context) error {
+	ins := Team{
+		BaseModel:   types.BaseModel{ID: 1, CreatedAt: time.Now().Unix()},
+		Name:        "青橙科技有限责任公司",
+		ParentID:    0,
+		Description: "青橙科技有限责任公司",
+	}
+	return database(ctx).Create(&ins).Error
 }

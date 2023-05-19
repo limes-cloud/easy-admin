@@ -1,10 +1,13 @@
 package model
 
 import (
+	"github.com/golang/protobuf/proto"
+	"github.com/limeschool/easy-admin/server/consts"
 	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools/tree"
 	"github.com/limeschool/easy-admin/server/types"
+	"time"
 )
 
 type Role struct {
@@ -124,4 +127,17 @@ func (r *Role) Update(ctx *core.Context) error {
 // DeleteByID 通过ID删除角色信息
 func (r *Role) DeleteByID(ctx *core.Context, id int64) error {
 	return transferErr(database(ctx).Where("id = ?", id).Delete(&r).Error)
+}
+
+func (r *Role) InitData(ctx *core.Context) error {
+	db := database(ctx)
+	ins := []Role{
+		{
+			BaseModel: types.BaseModel{
+				ID:        1,
+				CreatedAt: time.Now().Unix(),
+			}, ParentID: 0, Name: "超级管理员", Keyword: "superAdmin", Status: proto.Bool(true), DataScope: consts.ALLTEAM,
+		},
+	}
+	return db.Create(&ins).Error
 }

@@ -1,6 +1,8 @@
 package model
 
-import "github.com/limeschool/easy-admin/server/core"
+import (
+	"github.com/limeschool/easy-admin/server/core"
+)
 
 type NoticeUser struct {
 	NoticeID int64  `json:"notice_id" gorm:"not null;size:32;comment:通知id"`
@@ -10,11 +12,15 @@ type NoticeUser struct {
 	Notice   Notice `gorm:"->"`
 }
 
-func (u NoticeUser) TableName() string {
+func (u *NoticeUser) TableName() string {
 	return "tb_system_notice_user"
 }
 
 // Create 创建阅读信息
 func (u *NoticeUser) Create(ctx *core.Context) error {
 	return transferErr(database(ctx).Create(u).Error)
+}
+
+func (u *NoticeUser) InitData(ctx *core.Context) error {
+	return nil
 }

@@ -17,7 +17,7 @@ type LoginLog struct {
 	Description string `json:"description" gorm:"not null;size:256;comment:登录备注"`
 }
 
-func (u LoginLog) TableName() string {
+func (u *LoginLog) TableName() string {
 	return "tb_system_login_log"
 }
 
@@ -45,4 +45,8 @@ func (u *LoginLog) Page(ctx *core.Context, options types.PageOptions) ([]LoginLo
 	db = db.Order("created_at desc").Offset((options.Page - 1) * options.PageSize).Limit(options.PageSize)
 
 	return list, total, db.Find(&list).Error
+}
+
+func (u *LoginLog) InitData(ctx *core.Context) error {
+	return nil
 }

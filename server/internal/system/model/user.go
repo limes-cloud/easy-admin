@@ -6,6 +6,7 @@ import (
 	"github.com/limeschool/easy-admin/server/core"
 	"github.com/limeschool/easy-admin/server/errors"
 	"github.com/limeschool/easy-admin/server/tools"
+	"github.com/limeschool/easy-admin/server/tools/proto"
 	"github.com/limeschool/easy-admin/server/tools/tree"
 	"github.com/limeschool/easy-admin/server/types"
 	"time"
@@ -90,7 +91,7 @@ func (u *User) Create(ctx *core.Context) error {
 	u.OperatorID = md.UserID
 
 	u.UpdatedAt = time.Now().Unix()
-	u.Password, _ = tools.ParsePwd(u.Password)
+	u.Password = tools.ParsePwd(u.Password)
 	return transferErr(database(ctx).Create(u).Error)
 }
 
@@ -108,7 +109,7 @@ func (u *User) Update(ctx *core.Context) error {
 	u.OperatorID = md.UserID
 
 	if u.Password != "" {
-		u.Password, _ = tools.ParsePwd(u.Password)
+		u.Password = tools.ParsePwd(u.Password)
 	}
 
 	// 执行更新
@@ -169,4 +170,22 @@ func (u *User) GetAdminTeamIdByUserId(ctx *core.Context, userId int64) ([]int64,
 		}
 	}
 	return ids, nil
+}
+
+func (u *User) InitData(ctx *core.Context) error {
+	ins := User{
+		BaseModel:   types.BaseModel{ID: 1, CreatedAt: time.Now().Unix()},
+		TeamID:      1,
+		RoleID:      1,
+		Name:        "超级管理员",
+		Nickname:    "superAdmin",
+		Sex:         proto.Bool(true),
+		Phone:       "18888888888",
+		Password:    tools.ParsePwd("123456"),
+		Email:       "18888888888@qq.com",
+		Status:      proto.Bool(true),
+		DisableDesc: proto.String(""),
+	}
+	return database(ctx).Create(&ins).Error
+
 }

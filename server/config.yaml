@@ -24,19 +24,20 @@ log:
     maxBackup: 5 #日志文件最多保存个数
     maxAge: 1 #保留就文件的最大天数,单位天
     compress: false #是否进行压缩归档
+
 #数据库相关配置
 orm:
   - enable: true #是否启用数据库
     drive: mysql #数据库类型
     name: system #数据库实例名称,别随便改
-    dsn: root:root@tcp(127.0.0.1:3306)/operation?charset=utf8mb4&parseTime=True&loc=Local #连接dsn
+    dsn: root:root@tcp(127.0.0.1:3306)/hello?charset=utf8mb4&parseTime=True&loc=Local #连接dsn
     maxLifetime: 2h #最大生存时间
     maxOpenConn: 10 #最大连接数量
     maxIdleConn: 10 #最大空闲数量
     level: 4 #日志等级
     slowThreshold: 2s #慢sql阈值
     replicas:   #从数据库，主要用来读取数据
-        - root:root@tcp(127.0.0.1:3306)/operation?charset=utf8mb4&parseTime=True&loc=Local
+        - root:root@tcp(127.0.0.1:3306)/hello?charset=utf8mb4&parseTime=True&loc=Local
 # redis相关配置
 redis:
   - enable: true

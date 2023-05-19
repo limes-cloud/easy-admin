@@ -67,5 +67,10 @@ func Init(engine *gin.RouterGroup) {
 		api.PUT("/notice", handler.UpdateNotice)
 		api.DELETE("/notice", handler.DeleteNotice)
 
+		// 文件管理
+		api.GET("/files", handler.AllFile)
+		api.POST("/file", handler.AddFile)
+		api.PUT("/file", handler.UpdateFile)
+		api.DELETE("/file", handler.DeleteFile)
 	}
 }

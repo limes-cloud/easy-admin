@@ -21,9 +21,9 @@ func RandomCode(len int) string {
 	return strconv.Itoa(code + int(math.Pow10(len-1)))
 }
 
-func ParsePwd(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(hash), err
+func ParsePwd(password string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hash)
 }
 
 func CompareHashPwd(p1, p2 string) bool {
