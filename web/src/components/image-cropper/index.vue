@@ -56,6 +56,7 @@
 </template>
 
 <script lang="ts">
+  // @ts-ignore
   import ImgCutter from 'vue-img-cutter';
 
   //   function dataURLtoBlob(dataurl: any) {
