@@ -1,0 +1,153 @@
+service:
+  name: easy-admin # 服务名称
+  addr: :8080  #服务地址
+  debug: true  #是否开启debug
+  errorCode: 400 #默认失败的code
+  successCode: 200 #默认成功的code
+  title: easy-admin 后台管理系统 #系统名称
+  desc: 开放协作，拥抱未来，插件化编程实现 #系统描述
+  copyright: Copyright © 2023 lime.qlime.cn. All rights reserved. #版权信息
+  staticUrl: http://localhost:8080  #静态资源url
+  logo: http://p3-armor.byteimg.com/tos-cn-i-49unhts6dw/dfdba5317c0c20ce20e64fac803d52bc.svg~tplv-49unhts6dw-image.image #系统logo
+  topMenu: false
+# 日志相关配置
+log:
+  header: trace-id # 当请求头存在trace-id时，优先使用
+  field: trace-id # 链路日志字段名
+  level: 0 #日志输出等级
+  output:
+    - stdout # stdout:控制台输出，k8s日志收集
+    - file # file:输出到文件
+  file: #output存在file时此配置才可生效
+    name: ./tmp/runtime/output.log #日志存放地址
+    maxSize: 1 #日志文件最大容量,单位m
+    maxBackup: 5 #日志文件最多保存个数
+    maxAge: 1 #保留就文件的最大天数,单位天
+    compress: false #是否进行压缩归档
+
+#数据库相关配置
+orm:
+  - enable: true #是否启用数据库
+    drive: mysql #数据库类型
+    name: system #数据库实例名称,别随便改
+    dsn: easy_admin:reG5hMFrFbEXwHkC@tcp(127.0.0.1:3306)/easy_admin?charset=utf8mb4&parseTime=True&loc=Local #连接dsn
+    maxLifetime: 2h #最大生存时间
+    maxOpenConn: 10 #最大连接数量
+    maxIdleConn: 10 #最大空闲数量
+    level: 4 #日志等级
+    slowThreshold: 2s #慢sql阈值
+    replicas:   #从数据库，主要用来读取数据
+        - easy_admin:reG5hMFrFbEXwHkC@tcp(127.0.0.1:3306)/easy_admin?charset=utf8mb4&parseTime=True&loc=Local
+# redis相关配置
+redis:
+  - enable: true
+    name: cache
+    host: 127.0.0.1:6379 #redis地址
+    username:  #连接账号
+    password:  #连接密码
+#cas_bin 权限校验
+enforcer:
+  enable: true #是否开启enforcer权限校验
+  db: system #选择enforcer的数据库
+  cache: cache #选择缓存的redis名
+# jwt 身份验证
+jwt:
+  enable: true #是否开启jwt
+  header: Authorization #jwt验证header
+  secret: limeSchool #密钥
+  cache: cache #redis名称
+  expire: 30s #过期时间
+  renewal: 2h #续期时间
+  unique: true #是否唯一设备登陆
+  whitelist: #忽略token校验以及鉴权的白名单
+    post:/api/system/token/refresh: true
+    post:/api/system/captcha: true
+    post:/api/system/user/login: true
+    get:/api/system/config: true
+    post:/api/system/user/logout: true
+#证书相关配置 可以初始化加载证书，实现快速使用
+cert:
+  - name: decodePassword  #证书名
+    path: cert/private.pem #证书路径
+  - name: encodePassword
+    path: cert/public.pem
+# 邮件发送相关配置
+email:
+  template: #邮件模板
+    - name: captcha #邮件模板key
+      subject: 验证码发送通知 #邮件模板主题
+      src: template/email/default.html #邮件模板路径
+  company: 青柠校园 #发送单位名称
+  user: 860808187@qq.com #发送者
+  host: smtp.qq.com:25 #发送host
+  password: ersukmsstobebdef # 发送host密码
+#验证码相关配置
+captcha:
+  - name: login #验证码名称
+    type: image #验证码类型 目前支持image/email
+    length: 6 #验证码长度
+    expire: 180s #过期时间
+    cache: cache #redis名称
+    height: 80 #图片高度
+    width: 240 #图片宽度
+    skew: 0.7 #验证数字倾斜成都
+    dotCount: 80 #干扰像素点数量
+  - name: user #验证码名称
+    type: email #验证码类型
+    template: captcha #验证码模板
+    length: 6 #验证码长度
+    expire: 180s #过期时间
+    cache: cache #redis名称
+# 文件上传相关配置
+file:
+  driveType: local #存储类型
+  localDir: static #本地上传时配置
+  subDir: #上传子目录配置信息
+    avatar:  #允许上传的子目录
+      maxSize: 500 #允许上传的文件最大大小
+      accepts: #允许上传的类型
+        - jpg
+        - png
+        - jpeg
+      rename: true #是否需要重命名，后端会生成唯一的文件名返回
+    file: #允许上传的子目录
+      maxSize: 500 #允许上传的文件最大大小
+      accepts: #允许上传的类型
+        - jpg
+        - png
+        - jpeg
+        - mp3
+        - mp4
+        - xls
+        - xlsx
+      rename: true #是否需要重命名，后端会生成唯一的文件名返回
+middleware: #中间件相关配置
+  pprof: #pprof分析工具
+    enable: true #是否开启pprof
+    query: secret #访问携带密钥的key url?secret=xxx
+    secret: limeschool
+  rateLimit:
+    enable: true #是否开启限流
+    limit: 100 #最大访问 limit/s
+  ipLimit: #ip限流
+    enable: true #是否开启ip限流
+    cache: cache #redis名称
+    limit: 20  #窗口时间内，最大访问次数
+    window: 1s #窗口时间
+  cupLoadShedding: #自适应降载
+    enable: true #是否开启自适应降载
+    threshold: 950 #cpu阈值
+    bucket: 50 #桶大小
+    window: 5s #窗口时间
+  cors:
+    enable: true
+    allowHeader: "Content-Type, Content-Length, Authorization" #允许准入的header
+    allowMethod: "POST, GET, OPTIONS, PUT, DELETE, UPDATE, PATCH" #允许准入的方法
+    allowOrigin: "*" #允许准入的域名
+    exposeHeader: "Content-Length, Access-Control-Allow-Headers"  #暴露的header
+    credentials: true
+  requestLog:
+    enable: true #是否开启请求日志
+    whitelist:  # 请求日志跳过名单
+      post:/api/system/captcha: true
+
