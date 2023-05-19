@@ -9,7 +9,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     // "suppressImplicitAnyIndexErrors":true,
-    "types": ["vite-plugin-svg-icons/client"],
+    "types": ["vite-plugin-svg-icons/client","node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
