@@ -13,6 +13,6 @@ RUN GOOS=linux CGO_ENABLED=0 go build -ldflags="-s -w" -installsuffix cgo -o ent
 FROM alpine
 EXPOSE 8081
 WORKDIR /go/build
-COPY ./config /go/build/config
+COPY ./config-prod.yaml /go/build/config-prod.yaml
 COPY --from=build /go/build/entry /go/build/entry
 CMD ["./entry","-c","./config-prod.yaml"]
