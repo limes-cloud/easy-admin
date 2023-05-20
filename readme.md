@@ -19,10 +19,10 @@
 ### 界面预览
 ##### 日间主题预览图
 采用字节最新开源中后台最佳实践项目进行开发，在ui设计风格上保持字节系ui风格，具有完整的免费的强大的生态社区，配套的风格配置、物料平台也是非常好用。
-![日间主题](doc/images/white-menu.png)
+![日间主题](https://easy-admin-1318318113.cos.ap-chengdu.myqcloud.com/white-menu.png)
 ##### 夜间主题预览图
 强大的色彩算法，能够进行在日间主题的色彩上进行无缝切换到日间主题，能够进行网站颜色搭配的自动转变。
-![夜间主题](doc/images/black-menu.png)
+![夜间主题](https://easy-admin-1318318113.cos.ap-chengdu.myqcloud.com/black-menu.png)
 
 ### 启动命令
 无须导入sql，启动全流程初始化数据。
